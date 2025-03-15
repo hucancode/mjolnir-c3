@@ -1,4 +1,5 @@
 module mj;
+import std::io;
 import std::math::matrix;
 import std::math::quaternion;
 import std::collections::list;
@@ -68,6 +69,7 @@ fn void NodePool.parent(&this, NodeHandle parent, NodeHandle child) {
     this.unparent(child);
     Node* p = this.get(parent);
     Node* c = this.get(child);
+    io::printfn("Parenting node %x type %d to %x type %d", c, c.type, p, p.type);
     if (p == null || c == null) {
         return;
     }
@@ -75,7 +77,7 @@ fn void NodePool.parent(&this, NodeHandle parent, NodeHandle child) {
     p.children.push(child);
 }
 
-fn void Engine.parentNode(&this, NodeHandle child, NodeHandle parent) {
+fn void Engine.parentNode(&this, NodeHandle parent, NodeHandle child) {
     this.resource.nodes.parent(parent, child);
 }
 

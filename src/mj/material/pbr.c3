@@ -49,7 +49,7 @@ fn void! Material.initDescriptorSet(&this, vk::Device device, vk::DescriptorPool
 	vk::allocateDescriptorSets(device, &alloc_info, &this.descriptor_set)!;
 }
 
-fn void Material.updateMaterialTextures(&this, vk::Device device, Texture* albedo, Texture* metalic, Texture* roughness) {
+fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Texture* metalic, Texture* roughness) {
     vk::WriteDescriptorSet[*] writes = {{
         .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dst_set          = this.descriptor_set,

@@ -109,6 +109,9 @@ fn void! VulkanContext.initVulkanInstance(&this) {
                 vk::DebugUtilsMessageTypeFlagsEXT messageType,
                 vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
                 void* pUserData) {
+                if(pCallbackData.p_message) {
+                    io::printfn("Debug message: %s", pCallbackData.p_message);
+                }
                 return 0;
             },
         };
@@ -160,9 +163,9 @@ fn uint VulkanContext.scorePhysicalDevice(&this, vk::PhysicalDevice device) {
         return 0;
     }
     defer free(extensions);
-    foreach (e:extensions) {
-        io::printfn("Extension %s", (ZString)e.extension_name[0..]);
-    }
+    // foreach (e:extensions) {
+    //     io::printfn("Extension %s", (ZString)e.extension_name[0..]);
+    // }
     foreach (required: REQUIRED_EXTENSIONS) {
         bool found = false;
         foreach (e : extensions) {
@@ -409,6 +412,7 @@ fn DataBuffer! VulkanContext.mallocLocalBuffer(&this, usz size, vk::BufferUsageF
         .sharing_mode = vk::SHARING_MODE_EXCLUSIVE,
     };
     DataBuffer ret;
+    ret.size = size;
     ret.buffer = vk::createBuffer(this.device, &create_info)!;
     ret.memory = this.allocateMemory(vk::getBufferMemoryRequirements(this.device, ret.buffer), { .host_visible, .host_coherent })!;
     vk::bindBufferMemory(this.device, ret.buffer, ret.memory, 0)!;
@@ -423,6 +427,7 @@ fn DataBuffer! VulkanContext.mallocHostVisibleBuffer(&this, usz size, vk::Buffer
         .sharing_mode = vk::SHARING_MODE_EXCLUSIVE,
     };
     DataBuffer ret;
+    ret.size = size;
     ret.buffer = vk::createBuffer(this.device, &create_info)!;
     ret.memory = this.allocateMemory(vk::getBufferMemoryRequirements(this.device, ret.buffer), { .host_visible, .host_coherent })!;
     vk::bindBufferMemory(this.device, ret.buffer, ret.memory, 0)!;
@@ -431,8 +436,8 @@ fn DataBuffer! VulkanContext.mallocHostVisibleBuffer(&this, usz size, vk::Buffer
 }
 
 fn DataBuffer! VulkanContext.createLocalBuffer(&this, void* data, usz size, vk::BufferUsageFlags usage) {
-    DataBuffer staging = this.createHostVisibleBuffer(data, size)!;
-    DataBuffer ret = this.mallocLocalBuffer(size, usage)!;
+    DataBuffer staging = this.createHostVisibleBuffer(data, size, { .transfer_src })!;
+    DataBuffer ret = this.mallocLocalBuffer(size, usage | vk::BufferUsageFlags { .transfer_dst })!;
     this.copyBuffer(&ret, &staging)!;
     staging.destroy(this.device);
     return ret;

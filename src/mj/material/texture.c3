@@ -1,4 +1,5 @@
 module mj;
+import std::io;
 import stbimage;
 import vk;
 
@@ -39,4 +40,13 @@ fn vk::ImageView! createImageView(vk::Device device, vk::Image image, vk::Format
         },
     };
     return vk::createImageView(device, &info)!;
+}
+
+fn TextureHandle! Engine.createTexture(&this, char[] data) {
+    TextureHandle ret = this.resource.mallocTexture();
+    Texture* texture = this.resource.getTexture(ret);
+    texture.init(this.context.device, data)!;
+    this.context.buildTexture(texture)!;
+    io::printfn("Texture created %d", ret.index);
+    return ret;
 }

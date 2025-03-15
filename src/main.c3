@@ -12,8 +12,11 @@ fn int main(String[] args) {
     Engine e;
     e.init(WIDTH, HEIGHT, TITLE)!!;
     defer e.destroy();
+    TextureHandle texture = e.createTexture($embed("mj/assets/statue-1275469_1280.jpg"))!!;
+    Texture* texture_ptr = e.resource.getTexture(texture);
     MaterialHandle material = e.createMaterial()!!;
     io::printfn("Material created");
+    e.resource.getMaterial(material).updateTextures(e.context.device, texture_ptr, texture_ptr, texture_ptr);
     StaticMeshHandle mesh = e.createCube(material)!!;
     io::printfn("Cube mesh created");
     NodeHandle handle = e.resource.createMeshNode(mesh);
@@ -25,7 +28,6 @@ fn int main(String[] args) {
         cube.transform.rotation.setFromAxisAngle(mj::VEC_UP, math::PI * e.getTime());
         e.update();
         e.render();
-        io::printfn("Frame rendered");
     };
     return 0;
 }

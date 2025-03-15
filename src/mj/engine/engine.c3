@@ -143,6 +143,7 @@ fn void! Engine.tryRender(&this) {
             case NodeType.STATIC_MESH: {
                 StaticMesh* mesh = this.resource.getMesh(node.mesh);
                 Material* material = this.resource.getMaterial(mesh.material);
+                // io::printfn("drawing mesh %x, material %x", mesh, material);
                 vk::cmdBindPipeline(command_buffer, vk::PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
                 vk::DescriptorSet[*] descriptor_sets = {
                     this.renderer.getDescriptorSet(),
@@ -175,6 +176,7 @@ fn void! Engine.tryRender(&this) {
             default:
                 break;
         }
+        // io::printfn("traversing children for node %x %d", node, node.children.len());
         foreach (child : node.children) {
             node_stack.push(child);
             transform_stack.push(world_matrix);

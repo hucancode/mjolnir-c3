@@ -47,8 +47,8 @@ fn void! Engine.buildSkeletalMesh(&this, SkeletalMesh* mesh, SkinnedVertex[] ver
     mesh.indices = indices;
     mesh.bones = bones;
     mesh.animations = HashMap(<String, Animation[]>){};
-    mesh.vertex_buffer = this.context.createLocalBuffer(&mesh.vertices, $sizeof(mesh.vertices), { .vertex_buffer })!;
-    mesh.index_buffer = this.context.createLocalBuffer(&mesh.indices, $sizeof(mesh.indices), { .index_buffer })!;
+    mesh.vertex_buffer = this.context.createLocalBuffer(&mesh.vertices, SkinnedVertex.sizeof * mesh.vertices.len, { .vertex_buffer })!;
+    mesh.index_buffer = this.context.createLocalBuffer(&mesh.indices, uint.sizeof * mesh.indices.len, { .index_buffer })!;
 
     // Create storage for bone matrices if needed
     if (bones.len > 0) {
