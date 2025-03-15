@@ -29,9 +29,14 @@ nix develop
 ```
 
 # Running
+
 First compile GLSL shader to SPIRV if you haven't done so
 ```sh
 glslc -c src/mj/material/shaders/pbr.frag -o src/mj/material/shaders/pbr.frag.spv
 glslc -c src/mj/material/shaders/pbr.vert -o src/mj/material/shaders/pbr.vert.spv
 ```
 Simply run `c3c run` to run the program.
+
+# Work in progress
+
+This is a work in progress. Functions are supposed to break frequently.
