@@ -58,7 +58,7 @@ fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Textu
         .descriptor_count = 1,
         .p_image_info     = &&vk::DescriptorImageInfo {
             .sampler        = albedo.sampler,
-            .image_view     = albedo.view,
+            .image_view     = albedo.buffer.view,
             .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
     }, {
@@ -69,7 +69,7 @@ fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Textu
         .descriptor_count = 1,
         .p_image_info     = &&vk::DescriptorImageInfo {
             .sampler        = metalic.sampler,
-            .image_view     = metalic.view,
+            .image_view     = metalic.buffer.view,
             .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
     }, {
@@ -80,7 +80,7 @@ fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Textu
         .descriptor_count = 1,
         .p_image_info     = &&vk::DescriptorImageInfo {
             .sampler        = roughness.sampler,
-            .image_view     = roughness.view,
+            .image_view     = roughness.buffer.view,
             .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
     }};
@@ -174,21 +174,31 @@ fn void! Engine.buildMaterial(&this, Material* mat) {
         .s_type                           = vk::STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .color_attachment_count           = 1,
         .p_color_attachment_formats       = &this.renderer.format.format,
+        .depth_attachment_format          = vk::FORMAT_D32_SFLOAT,
+    };
+    vk::PipelineDepthStencilStateCreateInfo depth_stencil = {
+        .s_type = vk::STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depth_test_enable = vk::TRUE,
+        .depth_write_enable = vk::TRUE,
+        .depth_compare_op = vk::COMPARE_OP_LESS,
+        .depth_bounds_test_enable = vk::FALSE,
+        .stencil_test_enable = vk::FALSE,
     };
     vk::GraphicsPipelineCreateInfo pipelineInfo = {
-        .s_type                           = vk::STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .stage_count                      = shader_stages.len,
-        .p_stages                         = &shader_stages,
-        .p_vertex_input_state             = &vertexInputInfo,
-        .p_input_assembly_state           = &inputAssembly,
-        .p_viewport_state                 = &viewportState,
-        .p_rasterization_state            = &rasterizer,
-        .p_multisample_state              = &multisampling,
-        .p_color_blend_state              = &blending,
-        .p_dynamic_state                  = &dynamicState,
-        .layout                           = mat.pipeline_layout,
-        .base_pipeline_index              = -1,
-        .p_next                           = &rendering_info,
+        .s_type                 = vk::STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stage_count            = shader_stages.len,
+        .p_stages               = &shader_stages,
+        .p_vertex_input_state   = &vertexInputInfo,
+        .p_input_assembly_state = &inputAssembly,
+        .p_viewport_state       = &viewportState,
+        .p_rasterization_state  = &rasterizer,
+        .p_multisample_state    = &multisampling,
+        .p_color_blend_state    = &blending,
+        .p_dynamic_state        = &dynamicState,
+        .p_depth_stencil_state  = &depth_stencil,
+        .layout                 = mat.pipeline_layout,
+        .base_pipeline_index    = -1,
+        .p_next                 = &rendering_info,
     };
     mat.pipeline = vk::createGraphicsPipelines(
         this.context.device,

@@ -10,7 +10,6 @@ struct Texture {
     int channel;
     ImageBuffer buffer;
     vk::Sampler sampler;
-    vk::ImageView view;
 }
 
 // const char[*] DATA = $embed("assets/statue-1275469_1280.jpg");
@@ -23,18 +22,17 @@ fn void! Texture.init(&this, vk::Device device, char[] data) {
 
 fn void Texture.destroy(&this, vk::Device device) {
     this.buffer.destroy(device);
-    vk::destroyImageView(device, this.view);
     vk::destroySampler(device, this.sampler);
 }
 
-fn vk::ImageView! createImageView(vk::Device device, vk::Image image, vk::Format format) {
+fn vk::ImageView! createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspect = { .color }) {
     vk::ImageViewCreateInfo info = {
         .s_type = vk::STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
         .view_type = vk::IMAGE_VIEW_TYPE_2D,
         .format = format,
         .subresource_range = {
-            .aspect_mask = { .color },
+            .aspect_mask = aspect,
             .level_count = 1,
             .layer_count = 1,
         },

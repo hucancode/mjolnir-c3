@@ -73,6 +73,7 @@ fn void! Engine.buildRenderer(&this) {
         }};
         vk::updateDescriptorSets(this.context.device, writes.len, &writes);
     }
+    this.renderer.depth_buffer = this.context.createDepthImage(vk::FORMAT_D32_SFLOAT, this.renderer.extent.width, this.renderer.extent.height)!;
 }
 
 fn void! Engine.pushSceneUniform(&this) {

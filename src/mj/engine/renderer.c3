@@ -32,6 +32,7 @@ struct Renderer {
     vk::ImageView[] views;
     vk::DescriptorSetLayout mutable_uniform_layout;
     Frame[MAX_FRAMES_IN_FLIGHT] frames;
+    ImageBuffer depth_buffer;
     uint current_frame;
 }
 
@@ -60,6 +61,60 @@ fn void! Renderer.buildSynchronizers(&this, vk::Device device) {
         this.frames[i].render_finished_semaphore = vk::createSemaphore(device, &semaphoreInfo)!;
         this.frames[i].fence = vk::createFence(device, &fenceInfo)!;
     }
+}
+
+fn ImageBuffer! VulkanContext.createDepthImage(&this, vk::Format format, uint width, uint height) {
+    vk::ImageCreateInfo create_info = {
+        .s_type = vk::STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .image_type = vk::IMAGE_TYPE_2D,
+        .extent = { .width = width, .height = height, .depth = 1 },
+        .mip_levels = 1,
+        .array_layers = 1,
+        .format = format,
+        .tiling = vk::IMAGE_TILING_OPTIMAL,
+        .initial_layout = vk::IMAGE_LAYOUT_UNDEFINED,
+        .usage = { .depth_stencil_attachment },
+        .sharing_mode = vk::SHARING_MODE_EXCLUSIVE,
+        .samples = { .n_1 },
+    };
+    ImageBuffer ret;
+    ret.image = vk::createImage(this.device, &create_info)!;
+    ret.memory = this.allocateMemory(vk::getImageMemoryRequirements(this.device, ret.image))!;
+    vk::bindImageMemory(this.device, ret.image, ret.memory, 0)!;
+
+    // Transition image layout
+    vk::CommandBuffer cmd = this.beginSingleTimeCommand()!;
+    vk::ImageMemoryBarrier barrier = {
+        .s_type = vk::STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .old_layout = vk::IMAGE_LAYOUT_UNDEFINED,
+        .new_layout = vk::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        .src_queue_family_index = vk::QUEUE_FAMILY_IGNORED,
+        .dst_queue_family_index = vk::QUEUE_FAMILY_IGNORED,
+        .image = ret.image,
+        .subresource_range = {
+            .aspect_mask = { .depth },
+            .base_mip_level = 0,
+            .level_count = 1,
+            .base_array_layer = 0,
+            .layer_count = 1,
+        },
+        .src_access_mask = {},
+        .dst_access_mask = { .depth_stencil_attachment_write },
+    };
+    vk::cmdPipelineBarrier(
+        cmd,
+        { .top_of_pipe },
+        { .early_fragment_tests },
+        {},
+        0, null,
+        0, null,
+        1, &barrier
+    );
+    this.endSingleTimeCommand(cmd)!;
+
+    // Create image view
+    ret.view = createImageView(this.device, ret.image, format, { .depth })!;
+    return ret;
 }
 
 fn void! Renderer.buildSwapchain(&this, vk::Device device, vk::SurfaceKHR surface, vk::SurfaceCapabilitiesKHR capabilities,
@@ -181,12 +236,21 @@ fn uint! Renderer.begin(&this, vk::Device device) {
         .store_op = vk::ATTACHMENT_STORE_OP_STORE,
         .clear_value = { .color = { .float32 = {0.0117, 0.0117, 0.0179, 1.0} } }
     };
+    vk::RenderingAttachmentInfoKHR depth_attachment = {
+        .s_type = vk::STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+        .image_view = this.depth_buffer.view,
+        .image_layout = vk::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        .load_op = vk::ATTACHMENT_LOAD_OP_CLEAR,
+        .store_op = vk::ATTACHMENT_STORE_OP_STORE,
+        .clear_value = { .depth_stencil = { .depth = 1.0f } },
+    };
     vk::RenderingInfoKHR render_info = {
         .s_type = vk::STRUCTURE_TYPE_RENDERING_INFO_KHR,
         .render_area = {.extent = this.extent},
         .layer_count = 1,
         .color_attachment_count = 1,
-        .p_color_attachments = &color_attachment
+        .p_color_attachments = &color_attachment,
+        .p_depth_attachment = &depth_attachment,
     };
     vk::cmdBeginRenderingKHR(this.getCommandBuffer(), &render_info);
     vk::cmdSetViewport(this.getCommandBuffer(), 0, 1, &&vk::Viewport {
@@ -293,6 +357,7 @@ fn void Renderer.destroySwapchain(&this, vk::Device device) {
     foreach (view : this.views) {
         vk::destroyImageView(device, view);
     }
+    this.depth_buffer.destroy(device);
     vk::destroySwapchainKHR(device, this.swapchain);
     free(this.views);
     free(this.images);

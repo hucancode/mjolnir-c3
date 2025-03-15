@@ -348,6 +348,7 @@ struct ImageBuffer {
     uint width;
     uint height;
     vk::Format format;
+    vk::ImageView view;
 }
 
 fn vk::CommandBuffer! VulkanContext.beginSingleTimeCommand(&this) {
@@ -456,6 +457,7 @@ fn ImageBuffer! VulkanContext.createImageBuffer(&this, void* data, vk::Format fo
     ImageBuffer ret = this.mallocImageBuffer(format, width, height)!;
     this.copyImage(&ret, &staging)!;
     staging.destroy(this.device);
+    ret.view = createImageView(this.device, ret.image, format)!;
     return ret;
 }
 
@@ -516,7 +518,6 @@ fn vk::DeviceMemory! VulkanContext.allocateMemory(&this, vk::MemoryRequirements 
 
 fn void! VulkanContext.buildTexture(&this, Texture* texture) {
     texture.buffer = this.createImageBuffer(texture.pixels, vk::FORMAT_R8G8B8A8_SRGB, texture.width, texture.height, texture.channel)!;
-    texture.view = createImageView(this.device, texture.buffer.image, vk::FORMAT_R8G8B8A8_SRGB)!;
     vk::SamplerCreateInfo sampler_info = {
         .s_type = vk::STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .mag_filter = vk::FILTER_LINEAR,
@@ -536,6 +537,7 @@ fn void! VulkanContext.buildTexture(&this, Texture* texture) {
 }
 
 fn void ImageBuffer.destroy(&this, vk::Device device) {
+    vk::destroyImageView(device, this.view);
     vk::unmapMemory(device, this.memory);
     vk::destroyImage(device, this.image);
     vk::freeMemory(device, this.memory);

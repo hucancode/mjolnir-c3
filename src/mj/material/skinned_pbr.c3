@@ -65,7 +65,7 @@ fn void SkinnedMaterial.updateTextures(&this, vk::Device device, Texture* albedo
             .descriptor_count = 1,
             .p_image_info     = &&vk::DescriptorImageInfo {
                 .sampler        = albedo.sampler,
-                .image_view     = albedo.view,
+                .image_view     = albedo.buffer.view,
                 .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             },
         }, {
@@ -76,7 +76,7 @@ fn void SkinnedMaterial.updateTextures(&this, vk::Device device, Texture* albedo
             .descriptor_count = 1,
             .p_image_info     = &&vk::DescriptorImageInfo {
                 .sampler        = metallic.sampler,
-                .image_view     = metallic.view,
+                .image_view     = metallic.buffer.view,
                 .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             },
         }, {
@@ -87,7 +87,7 @@ fn void SkinnedMaterial.updateTextures(&this, vk::Device device, Texture* albedo
             .descriptor_count = 1,
             .p_image_info     = &&vk::DescriptorImageInfo {
                 .sampler        = roughness.sampler,
-                .image_view     = roughness.view,
+                .image_view     = roughness.buffer.view,
                 .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             },
         }};
