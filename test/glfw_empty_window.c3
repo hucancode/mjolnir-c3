@@ -1,6 +1,6 @@
 import glfw;
 
-fn void! glfwEmptyWindow() @test {
+fn void glfwEmptyWindow() @test {
     assert(glfw::init());
     defer glfw::terminate();
     glfw::windowHint(glfw::CLIENT_API, glfw::NO_API);
