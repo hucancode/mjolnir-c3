@@ -1596,6 +1596,19 @@ const IndexType INDEX_TYPE_NONE_NV   = INDEX_TYPE_NONE_KHR;
 const IndexType INDEX_TYPE_UINT8_EXT = INDEX_TYPE_UINT8;
 const IndexType INDEX_TYPE_UINT8_KHR = INDEX_TYPE_UINT8;
 
+// Note: In C3 the following code is more idiomatic and clean, but it is not compatible with Vulkan C library
+// with this implementation IndexType.UINT8 will be passed as `2` to vulkan instead of the expected `1000265000`
+//
+// enum IndexType : CInt (inline CInt v) {
+// 	UINT16    = 0,
+// 	UINT32    = 1,
+// 	UINT8     = 1000265000,
+// 	NONE_KHR  = 1000165000,
+// 	NONE_NV   = 1000165000,
+// 	UINT8_EXT = 1000265000,
+// 	UINT8_KHR = 1000265000,
+// }
+
 bitstruct IndirectCommandsInputModeFlagsEXT : Flags @overlap {
 	bool vulkan_index_buffer : 0;
 	bool dxgi_index_buffer   : 1;
@@ -4663,6 +4676,3 @@ bitstruct PipelineStageFlags2 : Flags64 @overlap {
 	bool optical_flow_nv                      : 29;
 	bool convert_cooperative_vector_matrix_nv : 44;
 }
-
-
-

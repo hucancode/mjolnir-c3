@@ -1,7 +1,7 @@
-# Vulkan C3 Binding
+# Mjolnir Engine
 
-This is a Vulkan binding for `C3`.
-On the details of how to include this library in your project, see [vulkan.c3l](./lib/vulkan.c3l/README.md)
+Mjolnir is a rendering engine based on Vulkan API.
+This repository features a Vulkan binding for [C3 language](https://c3-lang.org). On the details of how to include this library in your project, see [vulkan.c3l](./lib/vulkan.c3l/README.md)
 
 ![](./readme/cube.gif)
 
@@ -31,7 +31,7 @@ nix develop
 # Running
 First compile GLSL shader to SPIRV if you haven't done so
 ```sh
-glslc -c src/shaders/shader.frag -o src/shaders/frag.spv
-glslc -c src/shaders/shader.vert -o src/shaders/vert.spv
+glslc -c src/mj/material/shaders/pbr.frag -o src/mj/material/shaders/pbr.frag.spv
+glslc -c src/mj/material/shaders/pbr.vert -o src/mj/material/shaders/pbr.vert.spv
 ```
 Simply run `c3c run` to run the program.
