@@ -132,12 +132,12 @@ fn void! Engine.tryRender(&this) {
                     {.vertex},
                     0,
                     Matrix4f.sizeof,
-                    &world_matrix
+                    &&world_matrix.transpose(),
                 );
                 vk::DeviceSize offset = 0;
                 vk::cmdBindVertexBuffers(command_buffer, 0, 1, &mesh.vertex_buffer.buffer, &offset);
                 vk::cmdBindIndexBuffer(command_buffer, mesh.index_buffer.buffer, 0, vk::INDEX_TYPE_UINT32);
-                vk::cmdDrawIndexed(command_buffer, mesh.indices.len, 1, 0, 0, 0);
+                vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
                 break;
             }
             case NodeType.STATIC_MESH: {
@@ -165,12 +165,13 @@ fn void! Engine.tryRender(&this) {
                     {.vertex},
                     0,
                     Matrix4f.sizeof,
-                    &world_matrix
+                    &&world_matrix.transpose(),
                 );
                 vk::DeviceSize offset = 0;
                 vk::cmdBindVertexBuffers(command_buffer, 0, 1, &mesh.vertex_buffer.buffer, &offset);
                 vk::cmdBindIndexBuffer(command_buffer, mesh.index_buffer.buffer, 0, vk::INDEX_TYPE_UINT32);
-                vk::cmdDrawIndexed(command_buffer, mesh.indices.len, 1, 0, 0, 0);
+                vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
+                // vk::cmdDraw(command_buffer, mesh.vertices.len);
                 break;
             }
             default:

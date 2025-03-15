@@ -23,6 +23,7 @@ fn int main(String[] args) {
     io::printfn("Node created");
     e.addToRoot(handle);
     Node* cube = e.getNode(handle);
+    e.scene.camera.position = {2.0, 2.0, 2.0};
     io::printfn("App initialized");
     while (!e.shouldClose()) {
         cube.transform.rotation.setFromAxisAngle(mj::VEC_UP, math::PI * e.getTime());

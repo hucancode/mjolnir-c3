@@ -45,5 +45,5 @@ fn Matrix4f Camera.calculateLookatMatrix(&this, Position target = {}) {
 fn Matrix4f Camera.calculateViewMatrix(&this) {
     return this.rotation.to_matrixf()
         .translate(this.position)
-        .transpose();
+        ;
 }

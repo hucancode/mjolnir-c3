@@ -19,5 +19,5 @@ void main() {
     float brightness = max(dot(normalize(normal), lightDir), 0.0);
     vec4 albedo = texture(albedoSampler, uv);
     vec4 shadedColor = brightness * brightness * albedo;
-    outColor = vec4(1.0, 1.0, 0.0, 1.0);
+    outColor = brightness * vec4(1.0, 1.0, 0.0, 1.0);
 }

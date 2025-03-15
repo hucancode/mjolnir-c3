@@ -39,8 +39,8 @@ fn void! VulkanContext.buildMesh(&this, StaticMesh* mesh, Vertex[] vertices, uin
     mesh.vertices = vertices;
     mesh.indices = indices;
     io::printfn("building mesh with %d vertices %d indices", vertices.len, indices.len);
-    mesh.vertex_buffer = this.createLocalBuffer(&mesh.vertices, Vertex.sizeof * mesh.vertices.len, { .vertex_buffer })!;
-    mesh.index_buffer = this.createLocalBuffer(&mesh.indices, uint.sizeof * mesh.indices.len, { .index_buffer })!;
+    mesh.vertex_buffer = this.createLocalBuffer(mesh.vertices, Vertex.sizeof * mesh.vertices.len, { .vertex_buffer })!;
+    mesh.index_buffer = this.createLocalBuffer(mesh.indices, uint.sizeof * mesh.indices.len, { .index_buffer })!;
     io::printfn("mesh indices and vertices built");
 }
 

@@ -1071,7 +1071,7 @@ fn void cmdDispatchIndirect(CommandBuffer commandBuffer, Buffer buffer, DeviceSi
 	internal::cmdDispatchIndirect(commandBuffer, buffer, offset);
 }
 
-fn void cmdDraw(CommandBuffer commandBuffer, uint vertexCount, uint instanceCount, uint firstVertex, uint firstInstance) @inline {
+fn void cmdDraw(CommandBuffer commandBuffer, uint vertexCount, uint instanceCount = 1, uint firstVertex = 0, uint firstInstance = 0) @inline {
 	internal::cmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -1083,7 +1083,7 @@ fn void cmdDrawClusterIndirectHUAWEI(CommandBuffer commandBuffer, Buffer buffer,
 	internal::cmdDrawClusterIndirectHUAWEI(commandBuffer, buffer, offset);
 }
 
-fn void cmdDrawIndexed(CommandBuffer commandBuffer, uint indexCount, uint instanceCount, uint firstIndex, int vertexOffset, uint firstInstance) @inline {
+fn void cmdDrawIndexed(CommandBuffer commandBuffer, uint indexCount, uint instanceCount = 1, uint firstIndex = 0, int vertexOffset = 0, uint firstInstance = 0) @inline {
 	internal::cmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 

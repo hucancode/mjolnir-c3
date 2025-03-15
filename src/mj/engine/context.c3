@@ -436,6 +436,7 @@ fn DataBuffer! VulkanContext.mallocHostVisibleBuffer(&this, usz size, vk::Buffer
 }
 
 fn DataBuffer! VulkanContext.createLocalBuffer(&this, void* data, usz size, vk::BufferUsageFlags usage) {
+    io::printfn("Creating local buffer size %d", size);
     DataBuffer staging = this.createHostVisibleBuffer(data, size, { .transfer_src })!;
     DataBuffer ret = this.mallocLocalBuffer(size, usage | vk::BufferUsageFlags { .transfer_dst })!;
     this.copyBuffer(&ret, &staging)!;
@@ -523,7 +524,7 @@ fn void! VulkanContext.buildTexture(&this, Texture* texture) {
         .address_mode_u = vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .address_mode_v = vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .address_mode_w = vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .anisotropy_enable = vk::TRUE,
+        .anisotropy_enable = vk::FALSE,
         .max_anisotropy = 1.0f,
         .border_color = vk::BORDER_COLOR_INT_OPAQUE_WHITE,
         .unnormalized_coordinates = vk::FALSE,
