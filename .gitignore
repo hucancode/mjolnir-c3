@@ -1,3 +1,4 @@
 /build
-/src/shaders/*.spv
+**/*.spv
 .DS_Store
+.env

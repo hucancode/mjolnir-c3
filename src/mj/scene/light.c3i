@@ -1,0 +1,13 @@
+module mj;
+
+enum LightType {
+    POINT,
+    DIRECTIONAL,
+    SPOT
+}
+
+struct Light {
+    float[<3>] color;
+    LightType type;
+    float intensity;
+}
