@@ -15,7 +15,8 @@ fn void! Scene.init(&this, vk::Device device) {
         .aspect_ratio = 16.0 / 9.0,
         .near = 0.1,
         .far = 10000.0,
-        .up = VEC_UP,
+        // not sure about this, it should be VEC_UP
+        .up = VEC_DOWN,
     };
     // scene-level descriptor set layout
     vk::DescriptorSetLayoutBinding view= {
