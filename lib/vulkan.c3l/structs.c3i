@@ -8353,11 +8353,11 @@ struct ClusterAccelerationStructureBuildTriangleClusterInfoNV {
     uint cluster_id;
     ClusterAccelerationStructureClusterFlagsNV cluster_flags;
 bitstruct : uint {
-    uint triangle_count: 0..8;
-    uint vertex_count: 9..17;
-    uint position_truncate_bit_count: 18..23;
-    uint index_type: 24..27;
-    uint opacity_micromap_index_type: 28..31;
+    ushort triangle_count: 0..8;
+    ushort vertex_count: 9..17;
+    ushort position_truncate_bit_count: 18..23;
+    ushort index_type: 24..27;
+    ushort opacity_micromap_index_type: 28..31;
 }
     ClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV base_geometry_index_and_geometry_flags;
     ushort index_buffer_stride;
