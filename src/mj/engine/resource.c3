@@ -18,17 +18,25 @@ struct ResourcePool {
     List(<uint>) free_indices;
 }
 
+fn void ResourcePool.init(&this) {
+    this.entries.tinit();
+    this.free_indices.tinit();
+}
+
 fn Handle ResourcePool.malloc(&this) {
-    if (this.free_indices.is_empty()) {
-        uint index = (uint)this.entries.size;
-        this.entries.push({.generation = 0, .active = true});
-        return {index, 0};
+    uint! index = this.free_indices.pop();
+    if (catch e = index) {
+        Handle ret = {
+            .index = (uint)this.entries.size,
+            .generation = 0
+        };
+        this.entries.push({ .generation = 0, .active = true });
+        return ret;
     }
-    uint index = this.free_indices.pop()!!;
     char gen = this.entries[index].generation + 1;
     this.entries[index].generation = gen;
     this.entries[index].active = true;
-    return {index, gen};
+    return { .index = index, .generation = gen };
 }
 
 fn void ResourcePool.free(&this, Handle handle) {
@@ -37,6 +45,9 @@ fn void ResourcePool.free(&this, Handle handle) {
     }
     char gen = this.entries[handle.index].generation;
     if (gen != handle.generation) {
+        return;
+    }
+    if (!this.entries[handle.index].active) {
         return;
     }
     this.entries[handle.index].active = false;
@@ -63,6 +74,7 @@ fn void ResourcePool.destroy(&this) {
 }
 
 module mj;
+import std::io;
 import mj::resource;
 import vk;
 
@@ -90,6 +102,16 @@ struct ResourceManager {
     TexturePool textures;
     LightPool lights;
     NodePool nodes;
+}
+
+fn void ResourceManager.init(&this) {
+    this.meshes.init();
+    this.skeletal_meshes.init();
+    this.materials.init();
+    this.skinned_materials.init();
+    this.textures.init();
+    this.lights.init();
+    this.nodes.init();
 }
 
 fn StaticMeshHandle ResourceManager.mallocMesh(&this) @inline {
@@ -235,6 +257,7 @@ fn void ResourceManager.destroy(&this, vk::Device device) {
     this.nodes.destroy();
     foreach(i, &entry : this.meshes.entries) {
         if (entry.active) {
+            io::printfn("Destroying mesh %d", i);
             this.destroyMesh(StaticMeshHandle {.index = (uint)i, .generation = entry.generation}, device);
         }
     }

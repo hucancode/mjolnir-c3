@@ -6,6 +6,10 @@ import std::math;
 import vk;
 import glfw;
 
+const RENDER_FPS = 120;
+const FRAME_TIME = 1.0 / RENDER_FPS;
+const UPDATE_FPS = 24;
+const UPDATE_FRAME_TIME = 1.0 / UPDATE_FPS;
 struct Engine {
     glfw::Window* window;
     VulkanContext context;
@@ -13,6 +17,7 @@ struct Engine {
     ResourceManager resource;
     Scene scene;
     Time last_frame_timestamp;
+    Time last_update_timestamp;
     Time start_timestamp;
 }
 
@@ -30,7 +35,9 @@ fn void! Engine.init(&this, uint width, uint height, ZString title) {
     io::printfn("Window created %x", this.window);
     this.start_timestamp = time::now();
     this.last_frame_timestamp = time::now();
+    this.last_update_timestamp = time::now();
     this.context.init(this.window)!;
+    this.resource.init();
     this.buildScene()!;
     this.buildRenderer()!;
     this.scene.camera.aspect_ratio = (float)this.renderer.extent.width / (float)this.renderer.extent.height;
@@ -84,7 +91,6 @@ fn void Engine.pushSceneUniform(&this) {
         .time = (float)time::now().diff_sec(this.start_timestamp),
     });
 }
-
 fn void! Engine.tryRender(&this) {
     uint image_idx = this.renderer.begin(this.context.device)!;
     this.pushSceneUniform();
@@ -98,12 +104,13 @@ fn void! Engine.tryRender(&this) {
     node_stack.push(this.scene.root);
     transform_stack.push(MATRIX4F_IDENTITY);
     while (!node_stack.is_empty()) {
-        Node* node = this.resource.getNode(node_stack.pop()!);
+        NodeHandle handle = node_stack.pop()!;
+        Node* node = this.resource.getNode(handle);
         Matrix4f local_matrix = node.transform.toMatrix();
         Matrix4f world_matrix = transform_stack.pop()!
             .mul(local_matrix);
         switch (node.type) {
-            case NodeType.SKELETAL_MESH: {
+            case NodeType.SKELETAL_MESH:
                 SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
                 SkinnedMaterial* material = this.resource.getSkinnedMaterial(mesh.material);
                 // Update bone matrices
@@ -141,8 +148,7 @@ fn void! Engine.tryRender(&this) {
                 vk::cmdBindIndexBuffer(command_buffer, mesh.index_buffer.buffer, 0, vk::INDEX_TYPE_UINT32);
                 vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
                 break;
-            }
-            case NodeType.STATIC_MESH: {
+            case NodeType.STATIC_MESH:
                 StaticMesh* mesh = this.resource.getMesh(node.mesh);
                 Material* material = this.resource.getMaterial(mesh.material);
                 // io::printfn("drawing mesh %x, material %x", mesh, material);
@@ -173,9 +179,7 @@ fn void! Engine.tryRender(&this) {
                 vk::cmdBindVertexBuffers(command_buffer, 0, 1, &mesh.vertex_buffer.buffer, &offset);
                 vk::cmdBindIndexBuffer(command_buffer, mesh.index_buffer.buffer, 0, vk::INDEX_TYPE_UINT32);
                 vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
-                // vk::cmdDraw(command_buffer, mesh.vertices.len);
                 break;
-            }
             default:
                 break;
         }
@@ -189,6 +193,9 @@ fn void! Engine.tryRender(&this) {
 }
 
 fn void Engine.render(&this) {
+    if (time::now().diff_sec(this.last_frame_timestamp) < FRAME_TIME) {
+        return;
+    }
     anyfault excuse = @catch(this.tryRender());
     if (excuse == vk::VulkanError.ERROR_OUT_OF_DATE_KHR || excuse == vk::VulkanError.SUBOPTIMAL_KHR) {
         excuse = @catch(this.recreateSwapchain());
@@ -198,6 +205,7 @@ fn void Engine.render(&this) {
     } else if (excuse) {
         io::printfn("Something went wrong while rendering!");
     }
+    this.last_frame_timestamp = time::now();
 }
 
 fn void! Engine.recreateSwapchain(&this) {
@@ -209,7 +217,7 @@ fn void! Engine.recreateSwapchain(&this) {
 }
 
 fn float Engine.getDeltaTime(&this) {
-    return (float)time::now().diff_sec(this.last_frame_timestamp);
+    return (float)time::now().diff_sec(this.last_update_timestamp);
 }
 
 fn float Engine.getTime(&this) {
@@ -220,9 +228,12 @@ fn bool Engine.shouldClose(&this) {
     return glfw::windowShouldClose(this.window) != 0;
 }
 
-fn void Engine.update(&this) {
+fn bool Engine.update(&this) {
     glfw::pollEvents();
     float delta_time = this.getDeltaTime();
+    if (delta_time < UPDATE_FRAME_TIME) {
+        return false;
+    }
     foreach (&entry : this.resource.nodes.entries) {
         if (!entry.active) continue;
         Node* node = &entry.item;
@@ -253,6 +264,8 @@ fn void Engine.update(&this) {
         }
         track.update(anim.time, &this.resource.nodes, mesh.bones);
     }
+    this.last_update_timestamp = time::now();
+    return true;
 }
 
 fn void! Engine.destroy(&this) {

@@ -19,24 +19,42 @@ fn int main(String[] args) {
         .getMaterial(material)
         .updateTextures(e.context.device, texture_ptr, texture_ptr, texture_ptr);
     StaticMeshHandle mesh = e.createCube(material)!!;
-    Node*[4] nodes;
+    NodeHandle[4] nodes;
     NodeHandle prev = e.scene.root;
+
+    // animating tail
     for (uint i = 0;i<4;i++) {
         NodeHandle handle = e.resource.createMeshNode(mesh);
-        nodes[i] = e.resource.nodes[handle];
-        e.resource.nodes.parent(prev, handle);
+        nodes[i] = handle;
+        Node* node = e.resource.nodes[handle];
+        e.parentNode(prev, handle);
         if (i > 0) {
-            nodes[i].transform.position.x = 4.0f;
+            node.transform.position.x = 3.0f;
+        } else {
+            node.transform.position.y = 2.5f;
         }
         prev = handle;
+    }
+    // cube array
+    for (int i = -2;i<=2;i++) {
+        for (int j = -2;j<=2;j++) {
+            NodeHandle handle = e.resource.createMeshNode(mesh);
+            e.addToRoot(handle);
+            Node* node = e.resource.nodes[handle];
+            node.transform.position.x = i * 3.0f;
+            node.transform.position.z = j * 3.0f;
+        }
     }
     e.scene.camera.position = {0.0, 5.0, 10.0};
     io::printfn("App initialized");
     while (!e.shouldClose()) {
-        for (uint i = 0;i<4;i++) {
-            nodes[i].transform.rotation.setFromAxisAngle(mj::VEC_UP, math::PI * e.getTime()*0.5f);
+        if(e.update()) {
+            // animate tail by setting rotation
+            foreach (cube : nodes) {
+                e.resource.nodes[cube].transform.rotation
+                    .setFromAxisAngle(mj::VEC_UP, math::PI * e.getTime()*0.5f);
+            }
         }
-        e.update();
         e.render();
     };
     return 0;
