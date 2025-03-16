@@ -3,7 +3,7 @@
 Mjolnir is a rendering engine based on Vulkan API.
 This repository features a Vulkan binding for [C3 language](https://c3-lang.org). On the details of how to include this library in your project, see [vulkan.c3l](./lib/vulkan.c3l/README.md)
 
-![](./readme/cube.gif)
+![](./readme/many-cube.gif)
 
 # Installation
 
