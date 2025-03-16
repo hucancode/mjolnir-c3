@@ -334,8 +334,8 @@ fn void Renderer.buildSwapExtent(&this, vk::SurfaceCapabilitiesKHR capabilities)
         return;
     }
     this.extent = {
-        .width = 800,
-        .height = 600,
+        .width = 1280,
+        .height = 720,
     };
     this.extent.width = max(capabilities.min_image_extent.width, min(capabilities.max_image_extent.width, this.extent.width));
     this.extent.height = max(capabilities.min_image_extent.height, min(capabilities.max_image_extent.height, this.extent.height));

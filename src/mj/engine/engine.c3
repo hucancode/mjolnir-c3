@@ -33,6 +33,7 @@ fn void! Engine.init(&this, uint width, uint height, ZString title) {
     this.context.init(this.window)!;
     this.buildScene()!;
     this.buildRenderer()!;
+    this.scene.camera.aspect_ratio = (float)this.renderer.extent.width / (float)this.renderer.extent.height;
     io::printfn("Engine initialized");
 }
 

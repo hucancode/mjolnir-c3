@@ -4,8 +4,8 @@ import std::math;
 import glfw;
 import mj;
 
-const WIDTH = 1024;
-const HEIGHT = 768;
+const WIDTH = 1280;
+const HEIGHT = 720;
 const TITLE = "Hello Mjolnir!";
 
 fn int main(String[] args) {
@@ -30,7 +30,7 @@ fn int main(String[] args) {
         }
         prev = handle;
     }
-    e.scene.camera.position = {0.0, 5.0, 20.0};
+    e.scene.camera.position = {0.0, 5.0, 10.0};
     io::printfn("App initialized");
     while (!e.shouldClose()) {
         for (uint i = 0;i<4;i++) {
