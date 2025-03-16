@@ -30,11 +30,12 @@ const vk::VertexInputAttributeDescription[*] SKINNED_VERTEX_ATTR_DESCRIPTION = {
 }, {
    .binding = 0, .location = 5, .format = vk::FORMAT_R32G32B32A32_SFLOAT, .offset = SkinnedVertex.weights.offsetof
 }};
+
 struct SkeletalMesh {
     SkinnedVertex[] vertices;
     uint[] indices;
     NodeHandle[] bones;
-    HashMap(<String, Animation[]>) animations;
+    HashMap(<String, AnimationTrack>) animations;
     DataBuffer vertex_buffer;
     DataBuffer index_buffer;
     DataBuffer bone_buffer;
@@ -46,7 +47,7 @@ fn void! Engine.buildSkeletalMesh(&this, SkeletalMesh* mesh, SkinnedVertex[] ver
     mesh.vertices = vertices;
     mesh.indices = indices;
     mesh.bones = bones;
-    mesh.animations = HashMap(<String, Animation[]>){};
+    mesh.animations.tinit();
     mesh.vertex_buffer = this.context.createLocalBuffer(mesh.vertices, SkinnedVertex.sizeof * mesh.vertices.len, { .vertex_buffer })!;
     mesh.index_buffer = this.context.createLocalBuffer(mesh.indices, uint.sizeof * mesh.indices.len, { .index_buffer })!;
 
@@ -257,7 +258,10 @@ fn void! Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
 
         anim.rotations = rotations[:3];
     }
-    mesh.animations["Wiggle"] = animation_track[:segments];
+    mesh.animations["Wiggle"] = AnimationTrack {
+        .animations = animation_track[:segments],
+        .duration = 2.0f,
+    };
 }
 
 fn void SkeletalMesh.destroy(&this, vk::Device device) {
@@ -267,12 +271,7 @@ fn void SkeletalMesh.destroy(&this, vk::Device device) {
         this.bone_buffer.destroy(device);
     }
     foreach(track : this.animations.value_tlist()) {
-        foreach (anim : track) {
-            free(anim.positions);
-            free(anim.rotations);
-            free(anim.scales);
-        }
-        free(track);
+        track.destroy();
     };
     this.animations.free();
     free(this.vertices);

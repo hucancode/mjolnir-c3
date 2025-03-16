@@ -75,24 +75,42 @@ struct Animation {
     ScaleKeyframe[] scales;
 }
 
-fn void updateAnimationTrack(Animation[] track, float t, NodePool* manager, NodeHandle[] bones) {
-    for (uint i = 0; i < track.len; i++) {
-        updateAnimation(&track[i], t, manager, bones);
+fn void Animation.destroy(&this) {
+    free(this.positions);
+    free(this.rotations);
+    free(this.scales);
+}
+
+struct AnimationTrack {
+    Animation[] animations;
+    float duration;
+}
+
+fn void AnimationTrack.destroy(&this) {
+    foreach (&animation: this.animations) {
+        animation.destroy();
+    }
+    free(this.animations);
+}
+
+fn void AnimationTrack.update(&this, float t, NodePool* manager, NodeHandle[] bones) {
+    foreach (&animation: this.animations) {
+        animation.update(t, manager, bones);
     }
 }
 
-fn void updateAnimation(Animation* animation, float t, NodePool* manager, NodeHandle[] bones) {
-    Node* target = manager.get(bones[animation.bone_idx]);
-    if (animation.positions.len > 0) {
-        target.transform.position = samplePosition(animation.positions, t,
+fn void Animation.update(&this, float t, NodePool* manager, NodeHandle[] bones) {
+    Node* target = manager.get(bones[this.bone_idx]);
+    if (this.positions.len > 0) {
+        target.transform.position = samplePosition(this.positions, t,
             fn(a,b,alpha) => a*alpha + b*(1.0f - alpha));
     }
-    if (animation.rotations.len > 0) {
-        target.transform.rotation = sampleRotation(animation.rotations, t,
+    if (this.rotations.len > 0) {
+        target.transform.rotation = sampleRotation(this.rotations, t,
             fn(a,b,alpha) => a.slerp(b, alpha));
     }
-    if (animation.scales.len > 0) {
-        target.transform.scale = sampleScale(animation.scales, t,
+    if (this.scales.len > 0) {
+        target.transform.scale = sampleScale(this.scales, t,
             fn(a,b,alpha) => a*alpha + b*(1.0f - alpha));
     }
 }

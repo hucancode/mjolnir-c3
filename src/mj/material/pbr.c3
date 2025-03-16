@@ -210,7 +210,7 @@ fn void! Engine.buildMaterial(&this, Material* mat) {
 
 fn MaterialHandle! Engine.createMaterial(&this) {
     MaterialHandle ret = this.resource.materials.malloc();
-    Material* mat = this.resource.materials.get(ret);
+    Material* mat = this.resource.materials[ret];
     io::printfn("Material allocated");
     mat.vertex_code = $embed("shaders/pbr.vert.spv");
     mat.fragment_code = $embed("shaders/pbr.frag.spv");

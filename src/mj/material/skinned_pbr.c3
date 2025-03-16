@@ -226,7 +226,7 @@ fn void! Engine.buildSkinnedMaterial(&this, SkinnedMaterial* mat) {
 
 fn SkinnedMaterialHandle! Engine.createSkinnedMaterial(&this, uint max_bones) {
     SkinnedMaterialHandle ret = this.resource.skinned_materials.malloc();
-    SkinnedMaterial* mat = this.resource.skinned_materials.get(ret);
+    SkinnedMaterial* mat = this.resource.skinned_materials[ret];
     mat.vertex_code = $embed("shaders/skinned_pbr.vert.spv");
     mat.fragment_code = $embed("shaders/pbr.frag.spv");
     mat.max_bones = max_bones;

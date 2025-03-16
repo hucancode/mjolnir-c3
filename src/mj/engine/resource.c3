@@ -43,7 +43,7 @@ fn void ResourcePool.free(&this, Handle handle) {
     this.free_indices.push(handle.index);
 }
 
-fn Type* ResourcePool.get(&this, Handle handle) {
+macro Type* ResourcePool.get(&this, Handle handle) @operator([]) {
     if (handle.index >= this.entries.size) {
         return null;
     }
@@ -97,7 +97,7 @@ fn StaticMeshHandle ResourceManager.mallocMesh(&this) @inline {
 }
 
 fn StaticMesh* ResourceManager.getMesh(&this, StaticMeshHandle handle) @inline {
-    return this.meshes.get(handle);
+    return this.meshes[handle];
 }
 
 fn SkeletalMeshHandle ResourceManager.mallocSkeletalMesh(&this) @inline {
@@ -105,7 +105,7 @@ fn SkeletalMeshHandle ResourceManager.mallocSkeletalMesh(&this) @inline {
 }
 
 fn SkeletalMesh* ResourceManager.getSkeletalMesh(&this, SkeletalMeshHandle handle) @inline {
-    return this.skeletal_meshes.get(handle);
+    return this.skeletal_meshes[handle];
 }
 
 fn MaterialHandle ResourceManager.mallocMaterial(&this) @inline {
@@ -113,7 +113,7 @@ fn MaterialHandle ResourceManager.mallocMaterial(&this) @inline {
 }
 
 fn Material* ResourceManager.getMaterial(&this, MaterialHandle handle) @inline {
-    return this.materials.get(handle);
+    return this.materials[handle];
 }
 
 fn SkinnedMaterialHandle ResourceManager.createSkinnedMaterial(&this) @inline {
@@ -121,7 +121,7 @@ fn SkinnedMaterialHandle ResourceManager.createSkinnedMaterial(&this) @inline {
 }
 
 fn SkinnedMaterial* ResourceManager.getSkinnedMaterial(&this, SkinnedMaterialHandle handle) @inline {
-    return this.skinned_materials.get(handle);
+    return this.skinned_materials[handle];
 }
 
 fn TextureHandle ResourceManager.mallocTexture(&this) @inline {
@@ -129,31 +129,31 @@ fn TextureHandle ResourceManager.mallocTexture(&this) @inline {
 }
 
 fn Texture* ResourceManager.getTexture(&this, TextureHandle handle) @inline {
-    return this.textures.get(handle);
+    return this.textures[handle];
 }
 
 fn LightHandle ResourceManager.createLight(&this){
     LightHandle ret = this.lights.malloc();
-    Light* light = this.lights.get(ret);
+    Light* light = this.lights[ret];
     light.color = {1.0f, 1.0f, 1.0f};
     light.intensity = 1.0f;
     return ret;
 }
 
 fn Light* ResourceManager.getLight(&this, LightHandle handle) @inline {
-    return this.lights.get(handle);
+    return this.lights[handle];
 }
 
 fn NodeHandle ResourceManager.createNode(&this, NodeType type = NodeType.GROUP) {
     NodeHandle ret = this.nodes.malloc();
-    Node* node = this.nodes.get(ret);
+    Node* node = this.nodes[ret];
     node.transform.scale = {1.0f, 1.0f, 1.0f};
     node.type = type;
     return ret;
 }
 
 fn Node* ResourceManager.getNode(&this, NodeHandle handle) @inline {
-    return this.nodes.get(handle);
+    return this.nodes[handle];
 }
 
 fn Node* Engine.getNode(&this, NodeHandle handle) @inline {
@@ -162,21 +162,21 @@ fn Node* Engine.getNode(&this, NodeHandle handle) @inline {
 
 fn NodeHandle ResourceManager.createMeshNode(&this, StaticMeshHandle mesh) {
     NodeHandle ret = this.createNode(NodeType.STATIC_MESH);
-    Node* node = this.nodes.get(ret);
+    Node* node = this.nodes[ret];
     node.mesh = mesh;
     return ret;
 }
 
 fn NodeHandle ResourceManager.createSkeletalMeshNode(&this, SkeletalMeshHandle mesh) {
     NodeHandle ret = this.createNode(NodeType.SKELETAL_MESH);
-    Node* node = this.nodes.get(ret);
+    Node* node = this.nodes[ret];
     node.skeletal_mesh = mesh;
     return ret;
 }
 
 fn NodeHandle ResourceManager.createLightNode(&this, LightHandle light) {
     NodeHandle node = this.createNode(NodeType.LIGHT);
-    Node* n = this.nodes.get(node);
+    Node* n = this.nodes[node];
     n.light = light;
     return node;
 }
@@ -188,14 +188,14 @@ fn void ResourceManager.destroyNode(&this, NodeHandle handle) {
 }
 
 fn void ResourceManager.destroyMesh(&this, StaticMeshHandle handle, vk::Device device) {
-    StaticMesh* mesh = this.meshes.get(handle);
+    StaticMesh* mesh = this.meshes[handle];
     mesh.destroy(device);
     // TODO: manage resource reference count, material
     this.meshes.free(handle);
 }
 
 fn void ResourceManager.destroySkeletalMesh(&this, SkeletalMeshHandle handle, vk::Device device) {
-    SkeletalMesh* mesh = this.skeletal_meshes.get(handle);
+    SkeletalMesh* mesh = this.skeletal_meshes[handle];
     mesh.destroy(device);
     // TODO: manage resource reference count, material
     this.skeletal_meshes.free(handle);
@@ -203,20 +203,20 @@ fn void ResourceManager.destroySkeletalMesh(&this, SkeletalMeshHandle handle, vk
 
 // texture
 fn void ResourceManager.destroyTexture(&this, TextureHandle handle, vk::Device device) {
-    Texture* texture = this.textures.get(handle);
+    Texture* texture = this.textures[handle];
     texture.destroy(device);
     this.textures.free(handle);
 }
 
 fn void ResourceManager.destroyMaterial(&this, MaterialHandle handle, vk::Device device) {
-    Material* material = this.materials.get(handle);
+    Material* material = this.materials[handle];
     material.destroy(device);
     // TODO: manage resource reference count, texture
     this.materials.free(handle);
 }
 
 fn void ResourceManager.destroySkinnedMaterial(&this, SkinnedMaterialHandle handle, vk::Device device) {
-    SkinnedMaterial* material = this.skinned_materials.get(handle);
+    SkinnedMaterial* material = this.skinned_materials[handle];
     material.destroy(device);
     // TODO: manage resource reference count, texture
     this.skinned_materials.free(handle);

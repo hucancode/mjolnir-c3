@@ -232,38 +232,26 @@ fn void Engine.update(&this) {
         anim.time += delta_time;
         SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
         if (!mesh) continue;
-        Animation[]! track = mesh.animations.get(anim.name);
+        AnimationTrack! track = mesh.animations[anim.name];
         if (catch excuse = track) {
             continue;
         }
-        float max_duration = 0.0f;
-        for (usz j = 0; j < track.len; j++) {
-            Animation* a= &track[j];
-            float track_max = 0.0f;
-            if (a.positions.len > 0) track_max = a.positions[a.positions.len-1].time;
-            if (a.rotations.len > 0) track_max = math::max(track_max, a.rotations[a.rotations.len-1].time);
-            if (a.scales.len > 0) track_max = math::max(track_max, a.scales[a.scales.len-1].time);
-            max_duration = math::max(max_duration, track_max);
+        switch (anim.mode) {
+            case AnimationPlayMode.LOOP:
+                anim.time = fmod(anim.time, track.duration);
+                break;
+            case AnimationPlayMode.ONCE:
+                if (anim.time >= track.duration) {
+                    anim.time = track.duration;
+                    anim.status = AnimationStatus.STOPPED;
+                }
+                break;
+            case AnimationPlayMode.PINGPONG:
+                // handle playing in reverse
+                break;
+            default: break;
         }
-
-        if (max_duration > 0) {
-            switch (anim.mode) {
-                case AnimationPlayMode.LOOP:
-                    anim.time = fmod(anim.time, max_duration);
-                    break;
-                case AnimationPlayMode.ONCE:
-                    if (anim.time >= max_duration) {
-                        anim.time = max_duration;
-                        anim.status = AnimationStatus.STOPPED;
-                    }
-                    break;
-                case AnimationPlayMode.PINGPONG:
-                    // handle playing in reverse
-                    break;
-                default: break;
-            }
-        }
-        updateAnimation(track, anim.time, &this.resource.nodes, mesh.bones);
+        track.update(anim.time, &this.resource.nodes, mesh.bones);
     }
 }
 

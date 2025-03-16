@@ -23,7 +23,7 @@ fn int main(String[] args) {
     NodeHandle prev = e.scene.root;
     for (uint i = 0;i<4;i++) {
         NodeHandle handle = e.resource.createMeshNode(mesh);
-        nodes[i] = e.getNode(handle);
+        nodes[i] = e.resource.nodes[handle];
         e.resource.nodes.parent(prev, handle);
         if (i > 0) {
             nodes[i].transform.position.x = 4.0f;
