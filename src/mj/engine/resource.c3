@@ -18,7 +18,7 @@ struct ResourcePool {
     List(<uint>) free_indices;
 }
 
-fn Handle ResourcePool.malloc(ResourcePool* this) {
+fn Handle ResourcePool.malloc(&this) {
     if (this.free_indices.is_empty()) {
         uint index = (uint)this.entries.size;
         this.entries.push({.generation = 0, .active = true});
@@ -31,7 +31,7 @@ fn Handle ResourcePool.malloc(ResourcePool* this) {
     return {index, gen};
 }
 
-fn void ResourcePool.free(ResourcePool* this, Handle handle) {
+fn void ResourcePool.free(&this, Handle handle) {
     if (handle.index >= this.entries.size) {
         return;
     }
@@ -43,7 +43,7 @@ fn void ResourcePool.free(ResourcePool* this, Handle handle) {
     this.free_indices.push(handle.index);
 }
 
-fn Type* ResourcePool.get(ResourcePool* this, Handle handle) {
+fn Type* ResourcePool.get(&this, Handle handle) {
     if (handle.index >= this.entries.size) {
         return null;
     }
@@ -57,8 +57,14 @@ fn Type* ResourcePool.get(ResourcePool* this, Handle handle) {
     return &this.entries[handle.index].item;
 }
 
+fn void ResourcePool.destroy(&this) {
+    this.entries.free();
+    this.free_indices.free();
+}
+
 module mj;
 import mj::resource;
+import vk;
 
 def StaticMeshPool = ResourcePool(<StaticMesh>);
 def SkeletalMeshPool = ResourcePool(<SkeletalMesh>);
@@ -173,4 +179,94 @@ fn NodeHandle ResourceManager.createLightNode(&this, LightHandle light) {
     Node* n = this.nodes.get(node);
     n.light = light;
     return node;
+}
+
+fn void ResourceManager.destroyNode(&this, NodeHandle handle) {
+    this.nodes.unparent(handle);
+    // TODO: manage resource reference count, mesh, skeletal mesh, light
+    this.nodes.free(handle);
+}
+
+fn void ResourceManager.destroyMesh(&this, StaticMeshHandle handle, vk::Device device) {
+    StaticMesh* mesh = this.meshes.get(handle);
+    mesh.destroy(device);
+    // TODO: manage resource reference count, material
+    this.meshes.free(handle);
+}
+
+fn void ResourceManager.destroySkeletalMesh(&this, SkeletalMeshHandle handle, vk::Device device) {
+    SkeletalMesh* mesh = this.skeletal_meshes.get(handle);
+    mesh.destroy(device);
+    // TODO: manage resource reference count, material
+    this.skeletal_meshes.free(handle);
+}
+
+// texture
+fn void ResourceManager.destroyTexture(&this, TextureHandle handle, vk::Device device) {
+    Texture* texture = this.textures.get(handle);
+    texture.destroy(device);
+    this.textures.free(handle);
+}
+
+fn void ResourceManager.destroyMaterial(&this, MaterialHandle handle, vk::Device device) {
+    Material* material = this.materials.get(handle);
+    material.destroy(device);
+    // TODO: manage resource reference count, texture
+    this.materials.free(handle);
+}
+
+fn void ResourceManager.destroySkinnedMaterial(&this, SkinnedMaterialHandle handle, vk::Device device) {
+    SkinnedMaterial* material = this.skinned_materials.get(handle);
+    material.destroy(device);
+    // TODO: manage resource reference count, texture
+    this.skinned_materials.free(handle);
+}
+
+fn void ResourceManager.destroyLight(&this, LightHandle handle) {
+    this.lights.free(handle);
+}
+
+fn void ResourceManager.destroy(&this, vk::Device device) {
+    foreach(i, &entry : this.nodes.entries) {
+        if (entry.active) {
+            this.destroyNode(NodeHandle {.index = (uint)i, .generation = entry.generation});
+        }
+    }
+    this.nodes.destroy();
+    foreach(i, &entry : this.meshes.entries) {
+        if (entry.active) {
+            this.destroyMesh(StaticMeshHandle {.index = (uint)i, .generation = entry.generation}, device);
+        }
+    }
+    this.meshes.destroy();
+    foreach(i, &entry : this.skeletal_meshes.entries) {
+        if (entry.active) {
+            this.destroySkeletalMesh(SkeletalMeshHandle {.index = (uint)i, .generation = entry.generation}, device);
+        }
+    }
+    this.skeletal_meshes.destroy();
+    foreach(i, &entry : this.textures.entries) {
+        if (entry.active) {
+            this.destroyTexture(TextureHandle {.index = (uint)i, .generation = entry.generation}, device);
+        }
+    }
+    this.textures.destroy();
+    foreach(i, &entry : this.materials.entries) {
+        if (entry.active) {
+            this.destroyMaterial(MaterialHandle {.index = (uint)i, .generation = entry.generation}, device);
+        }
+    }
+    this.materials.destroy();
+    foreach(i, &entry : this.skinned_materials.entries) {
+        if (entry.active) {
+            this.destroySkinnedMaterial(SkinnedMaterialHandle {.index = (uint)i, .generation = entry.generation}, device);
+        }
+    }
+    this.skinned_materials.destroy();
+    foreach(i, &entry : this.lights.entries) {
+        if (entry.active) {
+            this.destroyLight(LightHandle {.index = (uint)i, .generation = entry.generation});
+        }
+    }
+    this.lights.destroy();
 }

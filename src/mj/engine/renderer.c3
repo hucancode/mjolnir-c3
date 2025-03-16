@@ -184,15 +184,6 @@ fn vk::DescriptorSet Renderer.getDescriptorSet(&this) @inline {
     return this.frames[this.current_frame].descriptor_set;
 }
 
-fn void Renderer.destroy(&this, vk::Device device, vk::CommandPool command_pool) {
-    foreach(f : this.frames) {
-        vk::destroySemaphore(device, f.image_available_semaphore);
-        vk::destroySemaphore(device, f.render_finished_semaphore);
-        vk::destroyFence(device, f.fence);
-        vk::freeCommandBuffers(device, command_pool, 1, &f.command_buffer);
-    }
-}
-
 fn uint! Renderer.begin(&this, vk::Device device) {
     vk::waitForFences(device, 1, &&this.getInFlightFence())!;
     uint image_idx = vk::acquireNextImageKHR(device, this.swapchain, ulong.max, this.getImageAvailableSemaphore())!;
@@ -351,9 +342,6 @@ fn void Renderer.buildSwapExtent(&this, vk::SurfaceCapabilitiesKHR capabilities)
 }
 
 fn void Renderer.destroySwapchain(&this, vk::Device device) {
-    foreach (image : this.images) {
-        vk::destroyImage(device, image);
-    }
     foreach (view : this.views) {
         vk::destroyImageView(device, view);
     }
@@ -361,4 +349,19 @@ fn void Renderer.destroySwapchain(&this, vk::Device device) {
     vk::destroySwapchainKHR(device, this.swapchain);
     free(this.views);
     free(this.images);
+}
+
+fn void Frame.destroy(&this, vk::Device device, vk::CommandPool command_pool) {
+    vk::destroySemaphore(device, this.image_available_semaphore);
+    vk::destroySemaphore(device, this.render_finished_semaphore);
+    vk::destroyFence(device, this.fence);
+    vk::freeCommandBuffers(device, command_pool, 1, &this.command_buffer);
+    this.uniform.destroy(device);
+}
+
+fn void Renderer.destroy(&this, vk::Device device, vk::CommandPool command_pool) {
+    this.destroySwapchain(device);
+    foreach(&f : this.frames) {
+        f.destroy(device, command_pool);
+    }
 }

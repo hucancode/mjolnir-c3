@@ -76,17 +76,17 @@ fn void! Engine.buildRenderer(&this) {
     this.renderer.depth_buffer = this.context.createDepthImage(vk::FORMAT_D32_SFLOAT, this.renderer.extent.width, this.renderer.extent.height)!;
 }
 
-fn void! Engine.pushSceneUniform(&this) {
+fn void Engine.pushSceneUniform(&this) {
     this.context.writeBuffer(this.renderer.getUniform(), &&SceneUniform {
         .view = this.scene.viewMatrix(),
         .projection = this.scene.projectionMatrix(),
         .time = (float)time::now().diff_sec(this.start_timestamp),
-    })!;
+    });
 }
 
 fn void! Engine.tryRender(&this) {
     uint image_idx = this.renderer.begin(this.context.device)!;
-    this.pushSceneUniform()!;
+    this.pushSceneUniform();
     vk::CommandBuffer command_buffer = this.renderer.getCommandBuffer();
     List(<NodeHandle>) node_stack;
     List(<Matrix4f>) transform_stack;
@@ -222,7 +222,7 @@ fn bool Engine.shouldClose(&this) {
 fn void Engine.update(&this) {
     glfw::pollEvents();
     float delta_time = this.getDeltaTime();
-    foreach (entry : this.resource.nodes.entries) {
+    foreach (&entry : this.resource.nodes.entries) {
         if (!entry.active) continue;
         Node* node = &entry.item;
         if (node.type != NodeType.SKELETAL_MESH) continue;
@@ -266,7 +266,12 @@ fn void Engine.update(&this) {
     }
 }
 
-fn void Engine.destroy(&this) {
-    // TODO: destroy resources
+fn void! Engine.destroy(&this) {
+    vk::deviceWaitIdle(this.context.device)!;
+    this.resource.destroy(this.context.device);
+    this.renderer.destroy(this.context.device, this.context.command_pool);
+    this.scene.destroy(this.context.device);
+    this.context.destroy()!;
+    glfw::destroyWindow(this.window);
     glfw::terminate();
 }

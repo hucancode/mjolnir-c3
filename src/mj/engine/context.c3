@@ -58,7 +58,6 @@ fn void! VulkanContext.init(&this, glfw::Window* window) {
 }
 
 fn void! VulkanContext.destroy(&this) {
-    vk::deviceWaitIdle(this.device)!;
     vk::destroyDescriptorPool(this.device, this.descriptor_pool);
     vk::destroyCommandPool(this.device, this.command_pool);
     vk::destroyDevice(this.device);
@@ -447,7 +446,7 @@ fn DataBuffer! VulkanContext.createLocalBuffer(&this, void* data, usz size, vk::
 
 fn DataBuffer! VulkanContext.createHostVisibleBuffer(&this, void* data, usz size, vk::BufferUsageFlags usage = { .transfer_src }) {
     DataBuffer ret = this.mallocHostVisibleBuffer(size, usage)!;
-    this.writeBuffer(&ret, data)!;
+    this.writeBuffer(&ret, data);
     return ret;
 }
 
@@ -461,7 +460,7 @@ fn ImageBuffer! VulkanContext.createImageBuffer(&this, void* data, vk::Format fo
     return ret;
 }
 
-fn void! VulkanContext.writeBuffer(&this, DataBuffer* buffer, void* data) {
+fn void VulkanContext.writeBuffer(&this, DataBuffer* buffer, void* data) {
     if (buffer.mapped) {
         mem::copy(buffer.mapped, data, buffer.size);
     }
@@ -516,35 +515,16 @@ fn vk::DeviceMemory! VulkanContext.allocateMemory(&this, vk::MemoryRequirements 
     return vk::allocateMemory(this.device, &info)!;
 }
 
-fn void! VulkanContext.buildTexture(&this, Texture* texture) {
-    texture.buffer = this.createImageBuffer(texture.pixels, vk::FORMAT_R8G8B8A8_SRGB, texture.width, texture.height, texture.channel)!;
-    vk::SamplerCreateInfo sampler_info = {
-        .s_type = vk::STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .mag_filter = vk::FILTER_LINEAR,
-        .min_filter = vk::FILTER_LINEAR,
-        .address_mode_u = vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .address_mode_v = vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .address_mode_w = vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .anisotropy_enable = vk::FALSE,
-        .max_anisotropy = 1.0f,
-        .border_color = vk::BORDER_COLOR_INT_OPAQUE_WHITE,
-        .unnormalized_coordinates = vk::FALSE,
-        .compare_enable = vk::FALSE,
-        .compare_op = vk::COMPARE_OP_ALWAYS,
-        .mipmap_mode = vk::SAMPLER_MIPMAP_MODE_LINEAR,
-    };
-    texture.sampler = vk::createSampler(this.device, &sampler_info)!;
-}
-
 fn void ImageBuffer.destroy(&this, vk::Device device) {
     vk::destroyImageView(device, this.view);
-    vk::unmapMemory(device, this.memory);
     vk::destroyImage(device, this.image);
     vk::freeMemory(device, this.memory);
 }
 
 fn void DataBuffer.destroy(&this, vk::Device device) {
-    vk::unmapMemory(device, this.memory);
+    if (this.mapped) {
+        vk::unmapMemory(device, this.memory);
+    }
     vk::destroyBuffer(device, this.buffer);
     vk::freeMemory(device, this.memory);
 }

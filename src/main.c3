@@ -11,7 +11,7 @@ const TITLE = "Hello Mjolnir!";
 fn int main(String[] args) {
     Engine e;
     e.init(WIDTH, HEIGHT, TITLE)!!;
-    defer e.destroy();
+    defer e.destroy()!!;
     TextureHandle texture = e.createTexture($embed("mj/assets/statue-1275469_1280.jpg"))!!;
     Texture* texture_ptr = e.resource.getTexture(texture);
     MaterialHandle material = e.createMaterial()!!;
