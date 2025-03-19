@@ -29,16 +29,16 @@ struct Camera {
 fn Matrix4f Camera.calculateProjectionMatrix(&this) {
     switch (this.projection) {
         case CameraProjection.PERSPECTIVE:
-            return matrix::perspective(<float>)(this.fov, this.aspect_ratio, this.near, this.far)
+            return matrix::perspective{float}(this.fov, this.aspect_ratio, this.near, this.far)
                 .transpose();
         case CameraProjection.ORTHOGRAPHIC:
-            return matrix::ortho(<float>)(0.0, this.right, 0.0, this.bottom, this.near, this.far)
+            return matrix::ortho{float}(0.0, this.right, 0.0, this.bottom, this.near, this.far)
                 .transpose();
     }
 }
 
 fn Matrix4f Camera.calculateLookatMatrix(&this, Position target = {}) {
-    return matrix::look_at(<float>)(this.position, target, this.up)
+    return matrix::look_at{float}(this.position, target, this.up)
         .transpose();
 }
 

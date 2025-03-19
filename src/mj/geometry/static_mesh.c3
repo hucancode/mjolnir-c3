@@ -34,7 +34,7 @@ struct StaticMesh {
     DataBuffer index_buffer;
 }
 
-fn void! VulkanContext.buildMesh(&this, StaticMesh* mesh, Vertex[] vertices, uint[] indices, MaterialHandle material) {
+fn void? VulkanContext.buildMesh(&this, StaticMesh* mesh, Vertex[] vertices, uint[] indices, MaterialHandle material) {
     mesh.material = material;
     mesh.vertices = vertices;
     mesh.indices = indices;
@@ -44,7 +44,7 @@ fn void! VulkanContext.buildMesh(&this, StaticMesh* mesh, Vertex[] vertices, uin
     io::printfn("mesh indices and vertices built");
 }
 
-fn void! VulkanContext.buildCube(&this, StaticMesh* mesh, MaterialHandle material, float[<4>] color = {0.125, 0.25, 0.5, 1.0}) {
+fn void? VulkanContext.buildCube(&this, StaticMesh* mesh, MaterialHandle material, float[<4>] color = {0.125, 0.25, 0.5, 1.0}) {
     const Vec3f A =  {-1.0, -1.0, 1.0};
     const Vec3f B =  {1.0, -1.0, 1.0};
     const Vec3f C =  {1.0, 1.0, 1.0};
@@ -107,14 +107,14 @@ fn void StaticMesh.destroy(&this, vk::Device device) {
     this.index_buffer.destroy(device);
 }
 
-fn StaticMeshHandle! Engine.createMesh(&this, Vertex[] vertices, uint[] indices, MaterialHandle material) {
+fn StaticMeshHandle? Engine.createMesh(&this, Vertex[] vertices, uint[] indices, MaterialHandle material) {
     StaticMeshHandle ret = this.resource.mallocMesh();
     this.context.buildMesh(this.resource.getMesh(ret), vertices, indices, material)!;
     io::printfn("Mesh created %d", ret.index);
     return ret;
 }
 
-fn StaticMeshHandle! Engine.createCube(&this, MaterialHandle material) {
+fn StaticMeshHandle? Engine.createCube(&this, MaterialHandle material) {
     StaticMeshHandle ret = this.resource.mallocMesh();
     io::printfn("mesh allocated");
     this.context.buildCube(this.resource.getMesh(ret), material)!;

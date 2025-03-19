@@ -1,4 +1,4 @@
-module mj::resource (<Type>);
+module mj::resource {Type};
 import std::collections::list;
 import std::core::mem;
 
@@ -14,8 +14,8 @@ struct Entry {
 }
 
 struct ResourcePool {
-    List(<Entry>) entries;
-    List(<uint>) free_indices;
+    List{Entry} entries;
+    List{uint} free_indices;
 }
 
 fn void ResourcePool.init(&this) {
@@ -24,7 +24,7 @@ fn void ResourcePool.init(&this) {
 }
 
 fn Handle ResourcePool.malloc(&this) {
-    uint! index = this.free_indices.pop();
+    uint? index = this.free_indices.pop();
     if (catch e = index) {
         Handle ret = {
             .index = (uint)this.entries.size,
@@ -78,21 +78,21 @@ import std::io;
 import mj::resource;
 import vk;
 
-def StaticMeshPool = ResourcePool(<StaticMesh>);
-def SkeletalMeshPool = ResourcePool(<SkeletalMesh>);
-def MaterialPool = ResourcePool(<Material>);
-def SkinnedMaterialPool = ResourcePool(<SkinnedMaterial>);
-def TexturePool = ResourcePool(<Texture>);
-def LightPool = ResourcePool(<Light>);
-def NodePool = ResourcePool(<Node>);
+alias StaticMeshPool = ResourcePool{StaticMesh};
+alias SkeletalMeshPool = ResourcePool{SkeletalMesh};
+alias MaterialPool = ResourcePool{Material};
+alias SkinnedMaterialPool = ResourcePool{SkinnedMaterial};
+alias TexturePool = ResourcePool{Texture};
+alias LightPool = ResourcePool{Light};
+alias NodePool = ResourcePool{Node};
 
-def StaticMeshHandle = Handle(<StaticMesh>);
-def SkeletalMeshHandle = Handle(<SkeletalMesh>);
-def MaterialHandle = Handle(<Material>);
-def SkinnedMaterialHandle = Handle(<SkinnedMaterial>);
-def TextureHandle = Handle(<Texture>);
-def LightHandle = Handle(<Light>);
-def NodeHandle = Handle(<Node>);
+alias StaticMeshHandle = Handle{StaticMesh};
+alias SkeletalMeshHandle = Handle{SkeletalMesh};
+alias MaterialHandle = Handle{Material};
+alias SkinnedMaterialHandle = Handle{SkinnedMaterial};
+alias TextureHandle = Handle{Texture};
+alias LightHandle = Handle{Light};
+alias NodeHandle = Handle{Node};
 
 struct ResourceManager {
     StaticMeshPool meshes;
@@ -251,44 +251,44 @@ fn void ResourceManager.destroyLight(&this, LightHandle handle) {
 fn void ResourceManager.destroy(&this, vk::Device device) {
     foreach(i, &entry : this.nodes.entries) {
         if (entry.active) {
-            this.destroyNode(NodeHandle {.index = (uint)i, .generation = entry.generation});
+            this.destroyNode({.index = (uint)i, .generation = entry.generation});
         }
     }
     this.nodes.destroy();
     foreach(i, &entry : this.meshes.entries) {
         if (entry.active) {
             io::printfn("Destroying mesh %d", i);
-            this.destroyMesh(StaticMeshHandle {.index = (uint)i, .generation = entry.generation}, device);
+            this.destroyMesh({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
     this.meshes.destroy();
     foreach(i, &entry : this.skeletal_meshes.entries) {
         if (entry.active) {
-            this.destroySkeletalMesh(SkeletalMeshHandle {.index = (uint)i, .generation = entry.generation}, device);
+            this.destroySkeletalMesh({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
     this.skeletal_meshes.destroy();
     foreach(i, &entry : this.textures.entries) {
         if (entry.active) {
-            this.destroyTexture(TextureHandle {.index = (uint)i, .generation = entry.generation}, device);
+            this.destroyTexture({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
     this.textures.destroy();
     foreach(i, &entry : this.materials.entries) {
         if (entry.active) {
-            this.destroyMaterial(MaterialHandle {.index = (uint)i, .generation = entry.generation}, device);
+            this.destroyMaterial({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
     this.materials.destroy();
     foreach(i, &entry : this.skinned_materials.entries) {
         if (entry.active) {
-            this.destroySkinnedMaterial(SkinnedMaterialHandle {.index = (uint)i, .generation = entry.generation}, device);
+            this.destroySkinnedMaterial({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
     this.skinned_materials.destroy();
     foreach(i, &entry : this.lights.entries) {
         if (entry.active) {
-            this.destroyLight(LightHandle {.index = (uint)i, .generation = entry.generation});
+            this.destroyLight({.index = (uint)i, .generation = entry.generation});
         }
     }
     this.lights.destroy();

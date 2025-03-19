@@ -14,7 +14,7 @@ struct SkinnedMaterial {
     uint max_bones;
 }
 
-fn void! SkinnedMaterial.initDescriptorSet(&this, vk::Device device, vk::DescriptorPool pool) {
+fn void? SkinnedMaterial.initDescriptorSet(&this, vk::Device device, vk::DescriptorPool pool) {
     vk::DescriptorSetLayoutBinding albedo = {
         .binding            = 0,
         .descriptor_type    = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -56,56 +56,59 @@ fn void! SkinnedMaterial.initDescriptorSet(&this, vk::Device device, vk::Descrip
     vk::allocateDescriptorSets(device, &alloc_info, &this.descriptor_set)!;
 }
 
-fn void SkinnedMaterial.updateTextures(&this, vk::Device device, Texture* albedo, Texture* metallic, Texture* roughness) {
+fn void SkinnedMaterial.updateTextures(&this, vk::Device device, Texture* albedo, Texture* metalic, Texture* roughness) {
+
+    vk::DescriptorImageInfo[*] image_infos = {{
+        .sampler        = albedo.sampler,
+        .image_view     = albedo.buffer.view,
+        .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    }, {
+        .sampler        = metalic.sampler,
+        .image_view     = metalic.buffer.view,
+        .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    }, {
+        .sampler        = roughness.sampler,
+        .image_view     = roughness.buffer.view,
+        .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    }};
     vk::WriteDescriptorSet[*] writes = {{
-            .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dst_set          = this.descriptor_set,
-            .dst_binding      = 0,
-            .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptor_count = 1,
-            .p_image_info     = &&vk::DescriptorImageInfo {
-                .sampler        = albedo.sampler,
-                .image_view     = albedo.buffer.view,
-                .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            },
-        }, {
-            .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dst_set          = this.descriptor_set,
-            .dst_binding      = 1,
-            .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptor_count = 1,
-            .p_image_info     = &&vk::DescriptorImageInfo {
-                .sampler        = metallic.sampler,
-                .image_view     = metallic.buffer.view,
-                .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            },
-        }, {
-            .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dst_set          = this.descriptor_set,
-            .dst_binding      = 2,
-            .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptor_count = 1,
-            .p_image_info     = &&vk::DescriptorImageInfo {
-                .sampler        = roughness.sampler,
-                .image_view     = roughness.buffer.view,
-                .image_layout   = vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            },
-        }};
+        .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dst_set          = this.descriptor_set,
+        .dst_binding      = 0,
+        .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptor_count = 1,
+        .p_image_info     = &image_infos[0],
+    }, {
+        .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dst_set          = this.descriptor_set,
+        .dst_binding      = 1,
+        .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptor_count = 1,
+        .p_image_info     = &image_infos[1],
+    }, {
+        .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dst_set          = this.descriptor_set,
+        .dst_binding      = 2,
+        .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptor_count = 1,
+        .p_image_info     = &image_infos[2],
+    }};
     vk::updateDescriptorSets(device, writes.len, &writes);
 }
 
 fn void SkinnedMaterial.updateBoneBuffer(&this, vk::Device device, vk::Buffer buffer, vk::DeviceSize size) {
+    vk::DescriptorBufferInfo buffer_info = {
+        .buffer = buffer,
+        .offset = 0,
+        .range = size,
+    };
     vk::WriteDescriptorSet[*] writes = {{
         .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dst_set          = this.descriptor_set,
         .dst_binding      = 3,
         .descriptor_type  = vk::DESCRIPTOR_TYPE_STORAGE_BUFFER,
         .descriptor_count = 1,
-        .p_buffer_info   = &&vk::DescriptorBufferInfo {
-            .buffer = buffer,
-            .offset = 0,
-            .range = size,
-        },
+        .p_buffer_info    = &buffer_info,
     }};
     vk::updateDescriptorSets(device, writes.len, &writes);
 }
@@ -116,7 +119,7 @@ fn void SkinnedMaterial.destroy(&this, vk::Device device) {
     vk::destroyDescriptorSetLayout(device, this.descriptor_set_layout);
 }
 
-fn void! Engine.buildSkinnedMaterial(&this, SkinnedMaterial* mat) {
+fn void? Engine.buildSkinnedMaterial(&this, SkinnedMaterial* mat) {
     vk::ShaderModule vert_module = this.context.createShaderModule(mat.vertex_code)!;
     defer vk::destroyShaderModule(this.context.device, vert_module);
     vk::ShaderModule frag_module = this.context.createShaderModule(mat.fragment_code)!;
@@ -159,12 +162,13 @@ fn void! Engine.buildSkinnedMaterial(&this, SkinnedMaterial* mat) {
         .s_type = vk::STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .rasterization_samples = {.n_1}
     };
+    vk::PipelineColorBlendAttachmentState color_blend_attachment = {
+        .color_write_mask = {.r, .g, .b, .a}
+    };
     vk::PipelineColorBlendStateCreateInfo color_blending = {
         .s_type = vk::STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .attachment_count = 1,
-        .p_attachments = &&vk::PipelineColorBlendAttachmentState {
-            .color_write_mask = {.r, .g, .b, .a}
-        }
+        .p_attachments = &color_blend_attachment,
     };
     vk::DynamicState[*] dynamic_states = {
         vk::DYNAMIC_STATE_VIEWPORT,
@@ -185,16 +189,15 @@ fn void! Engine.buildSkinnedMaterial(&this, SkinnedMaterial* mat) {
         mat.descriptor_set_layout
     };
 
-    mat.pipeline_layout = vk::createPipelineLayout(
-        this.context.device,
-        &&vk::PipelineLayoutCreateInfo {
-            .s_type = vk::STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .set_layout_count = set_layouts.len,
-            .p_set_layouts = &set_layouts,
-            .push_constant_range_count = 1,
-            .p_push_constant_ranges = &push_constant
-        }
-    )!;
+    vk::PipelineLayoutCreateInfo layout_info = {
+        .s_type = vk::STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .set_layout_count = set_layouts.len,
+        .p_set_layouts = &set_layouts,
+        .push_constant_range_count = 1,
+        .p_push_constant_ranges = &push_constant
+    };
+
+    mat.pipeline_layout = vk::createPipelineLayout(this.context.device, &layout_info)!;
     vk::PipelineRenderingCreateInfoKHR rendering_info = {
         .s_type                           = vk::STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .color_attachment_count           = 1,
@@ -224,7 +227,7 @@ fn void! Engine.buildSkinnedMaterial(&this, SkinnedMaterial* mat) {
     )!;
 }
 
-fn SkinnedMaterialHandle! Engine.createSkinnedMaterial(&this, uint max_bones) {
+fn SkinnedMaterialHandle? Engine.createSkinnedMaterial(&this, uint max_bones) {
     SkinnedMaterialHandle ret = this.resource.skinned_materials.malloc();
     SkinnedMaterial* mat = this.resource.skinned_materials[ret];
     mat.vertex_code = $embed("shaders/skinned_pbr.vert.spv");

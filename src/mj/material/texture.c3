@@ -12,7 +12,7 @@ struct Texture {
     vk::Sampler sampler;
 }
 
-fn void! Texture.init(&this, vk::Device device, char[] data) {
+fn void? Texture.init(&this, vk::Device device, char[] data) {
     this.pixels = stbimage::load_from_memory(data, data.len, &this.width, &this.height, &this.channel, stbimage::RGB_ALPHA);
     this.channel = 4;
 }
@@ -22,7 +22,7 @@ fn void Texture.destroy(&this, vk::Device device) {
     vk::destroySampler(device, this.sampler);
 }
 
-fn vk::ImageView! createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspect = { .color }) {
+fn vk::ImageView? createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspect = { .color }) {
     vk::ImageViewCreateInfo info = {
         .s_type = vk::STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
@@ -37,7 +37,7 @@ fn vk::ImageView! createImageView(vk::Device device, vk::Image image, vk::Format
     return vk::createImageView(device, &info)!;
 }
 
-fn void! VulkanContext.buildTexture(&this, Texture* texture) {
+fn void? VulkanContext.buildTexture(&this, Texture* texture) {
     texture.buffer = this.createImageBuffer(texture.pixels, vk::FORMAT_R8G8B8A8_SRGB, texture.width, texture.height, texture.channel)!;
     vk::SamplerCreateInfo sampler_info = {
         .s_type = vk::STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -57,7 +57,7 @@ fn void! VulkanContext.buildTexture(&this, Texture* texture) {
     texture.sampler = vk::createSampler(this.device, &sampler_info)!;
 }
 
-fn TextureHandle! Engine.createTexture(&this, char[] data) {
+fn TextureHandle? Engine.createTexture(&this, char[] data) {
     TextureHandle ret = this.resource.mallocTexture();
     Texture* texture = this.resource.getTexture(ret);
     texture.init(this.context.device, data)!;

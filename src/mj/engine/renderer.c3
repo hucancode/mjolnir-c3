@@ -36,7 +36,7 @@ struct Renderer {
     uint current_frame;
 }
 
-fn void! Renderer.buildCommandBuffers(&this, vk::Device device, vk::CommandPool command_pool) {
+fn void? Renderer.buildCommandBuffers(&this, vk::Device device, vk::CommandPool command_pool) {
     vk::CommandBufferAllocateInfo allocInfo = {
         .s_type = vk::STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .command_pool = command_pool,
@@ -48,7 +48,7 @@ fn void! Renderer.buildCommandBuffers(&this, vk::Device device, vk::CommandPool 
     }
 }
 
-fn void! Renderer.buildSynchronizers(&this, vk::Device device) {
+fn void? Renderer.buildSynchronizers(&this, vk::Device device) {
     vk::SemaphoreCreateInfo semaphoreInfo = {
         .s_type = vk::STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
     };
@@ -63,7 +63,7 @@ fn void! Renderer.buildSynchronizers(&this, vk::Device device) {
     }
 }
 
-fn ImageBuffer! VulkanContext.createDepthImage(&this, vk::Format format, uint width, uint height) {
+fn ImageBuffer? VulkanContext.createDepthImage(&this, vk::Format format, uint width, uint height) {
     vk::ImageCreateInfo create_info = {
         .s_type = vk::STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .image_type = vk::IMAGE_TYPE_2D,
@@ -117,7 +117,7 @@ fn ImageBuffer! VulkanContext.createDepthImage(&this, vk::Format format, uint wi
     return ret;
 }
 
-fn void! Renderer.buildSwapchain(&this, vk::Device device, vk::SurfaceKHR surface, vk::SurfaceCapabilitiesKHR capabilities,
+fn void? Renderer.buildSwapchain(&this, vk::Device device, vk::SurfaceKHR surface, vk::SurfaceCapabilitiesKHR capabilities,
     vk::SurfaceFormatKHR[] formats, vk::PresentModeKHR[] present_modes,
     uint graphics_family, uint present_family) {
     this.buildSwapSurfaceFormat(formats);
@@ -184,15 +184,16 @@ fn vk::DescriptorSet Renderer.getDescriptorSet(&this) @inline {
     return this.frames[this.current_frame].descriptor_set;
 }
 
-fn uint! Renderer.begin(&this, vk::Device device) {
+fn uint? Renderer.begin(&this, vk::Device device) {
     vk::waitForFences(device, 1, &&this.getInFlightFence())!;
     uint image_idx = vk::acquireNextImageKHR(device, this.swapchain, ulong.max, this.getImageAvailableSemaphore())!;
     vk::resetFences(device, 1, &&this.getInFlightFence())!;
     vk::resetCommandBuffer(this.getCommandBuffer(), { .release_resources })!;
-    vk::beginCommandBuffer(this.getCommandBuffer(), &&vk::CommandBufferBeginInfo {
+    vk::CommandBufferBeginInfo begin_info = {
         .s_type = vk::STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = { .one_time_submit },
-    })!;
+    };
+    vk::beginCommandBuffer(this.getCommandBuffer(), &begin_info)!;
     vk::ImageMemoryBarrier barrier = {
         .s_type = vk::STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .old_layout = vk::IMAGE_LAYOUT_UNDEFINED,
@@ -244,18 +245,20 @@ fn uint! Renderer.begin(&this, vk::Device device) {
         .p_depth_attachment = &depth_attachment,
     };
     vk::cmdBeginRenderingKHR(this.getCommandBuffer(), &render_info);
-    vk::cmdSetViewport(this.getCommandBuffer(), 0, 1, &&vk::Viewport {
+    vk::Viewport viewport = {
         .width = this.extent.width,
         .height = this.extent.height,
         .max_depth = 1.0,
-    });
-    vk::cmdSetScissor(this.getCommandBuffer(), 0, 1, &&vk::Rect2D {
+    };
+    vk::Rect2D scissor = {
         .extent = this.extent,
-    });
+    };
+    vk::cmdSetViewport(this.getCommandBuffer(), 0, 1, &viewport);
+    vk::cmdSetScissor(this.getCommandBuffer(), 0, 1, &scissor);
     return image_idx;
 }
 
-fn void! Renderer.end(&this, uint image_idx, vk::Queue graphic_queue, vk::Queue present_queue) {
+fn void? Renderer.end(&this, uint image_idx, vk::Queue graphic_queue, vk::Queue present_queue) {
     vk::cmdEndRenderingKHR(this.getCommandBuffer());
     vk::ImageMemoryBarrier barrier = {
         .s_type = vk::STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -285,11 +288,12 @@ fn void! Renderer.end(&this, uint image_idx, vk::Queue graphic_queue, vk::Queue 
         1, &barrier
     );
     vk::endCommandBuffer(this.getCommandBuffer())!;
+    vk::PipelineStageFlags wait_dst_stage_mask = {.color_attachment_output};
     vk::SubmitInfo submitInfo = {
         .s_type = vk::STRUCTURE_TYPE_SUBMIT_INFO,
         .wait_semaphore_count = 1,
         .p_wait_semaphores = &&this.getImageAvailableSemaphore(),
-        .p_wait_dst_stage_mask = &&vk::PipelineStageFlags { .color_attachment_output },
+        .p_wait_dst_stage_mask = &wait_dst_stage_mask,
         .command_buffer_count = 1,
         .p_command_buffers = &&this.getCommandBuffer(),
         .signal_semaphore_count = 1,

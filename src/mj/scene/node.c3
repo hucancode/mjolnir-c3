@@ -23,7 +23,7 @@ struct Transform {
 
 struct Node {
     NodeHandle parent;
-    List(<NodeHandle>) children;
+    List{NodeHandle} children;
     NodeType type;
     union {
         StaticMeshHandle mesh;
@@ -43,9 +43,7 @@ fn Matrix4f Transform.toMatrix(&this) {
 }
 
 fn Transform newTransform() {
-    return Transform {
-        .scale = {1.0, 1.0, 1.0},
-    };
+    return { .scale = {1.0, 1.0, 1.0} };
 }
 
 
@@ -59,7 +57,7 @@ fn void NodePool.unparent(&this, NodeHandle node) {
     if (p != null && p != n) {
         if (try i = p.children.index_of(node)) {
             p.children.swap(i, p.children.len() - 1);
-            anyfault e = @catch(p.children.pop());
+            fault e = @catch(p.children.pop());
         }
     }
     n.parent = node;

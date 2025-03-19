@@ -1,7 +1,7 @@
 module cgltf;
 
-distinct Size = CInt;
-distinct Bool = CInt;
+typedef Size = CInt;
+typedef Bool = CInt;
 
 enum FileType {
 	INVALID,
@@ -22,16 +22,16 @@ enum Result {
 	LEGACY_GLTF,
 }
 
-def ProcAllocFunc = fn void* (void* user, Size size);
-def ProcFreeFunc = fn void (void* user, void* ptr);
+alias ProcAllocFunc = fn void* (void* user, Size size);
+alias ProcFreeFunc = fn void (void* user, void* ptr);
 struct MemoryOptions {
 	ProcAllocFunc alloc_func;
 	ProcFreeFunc free_func;
 	void* user_data;
 }
 
-def ProcRead = fn Result (MemoryOptions* memory_options, FileOptions* file_options, ZString path, Size* size, void** data);
-def ProcRelease = fn void (MemoryOptions* memory_options, FileOptions* file_options, void* data);
+alias ProcRead = fn Result (MemoryOptions* memory_options, FileOptions* file_options, ZString path, Size* size, void** data);
+alias ProcRelease = fn void (MemoryOptions* memory_options, FileOptions* file_options, void* data);
 struct FileOptions {
     ProcRead read;
 	ProcRelease release;
@@ -239,7 +239,7 @@ struct Image {
 	Extension* extensions;
 }
 
-distinct FilterType = CInt;
+typedef FilterType = CInt;
 const FilterType FILTER_TYPE_UNDEFINED = 0;
 const FilterType FILTER_TYPE_NEAREST  = 9728;
 const FilterType FILTER_TYPE_LINEAR = 9729;
@@ -248,7 +248,7 @@ const FilterType FILTER_TYPE_LINEAR_MIPMAP_NEAREST = 9985;
 const FilterType FILTER_TYPE_NEAREST_MIPMAP_LINEAR = 9986;
 const FilterType FILTER_TYPE_LINEAR_MIPMAP_LINEAR = 9987;
 
-distinct WrapMode = CInt;
+typedef WrapMode = CInt;
 const WrapMode WRAP_MODE_CLAMP_TO_EDGE = 33071;
 const WrapMode WRAP_MODE_MIRRORED_REPEAT = 33648;
 const WrapMode WRAP_MODE_REPEAT = 10497;
