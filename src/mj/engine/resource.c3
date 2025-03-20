@@ -209,41 +209,37 @@ fn NodeHandle ResourceManager.createLightNode(&this, LightHandle light) {
 
 fn void ResourceManager.destroyNode(&this, NodeHandle handle) {
     this.nodes.unparent(handle);
+    this.nodes[handle].destroy();
     // TODO: manage resource reference count, mesh, skeletal mesh, light
     this.nodes.free(handle);
 }
 
 fn void ResourceManager.destroyMesh(&this, StaticMeshHandle handle, vk::Device device) {
-    StaticMesh* mesh = this.meshes[handle];
-    mesh.destroy(device);
+    this.meshes[handle].destroy(device);
     // TODO: manage resource reference count, material
     this.meshes.free(handle);
 }
 
 fn void ResourceManager.destroySkeletalMesh(&this, SkeletalMeshHandle handle, vk::Device device) {
-    SkeletalMesh* mesh = this.skeletal_meshes[handle];
-    mesh.destroy(device);
+    this.skeletal_meshes[handle].destroy(device);
     // TODO: manage resource reference count, material
     this.skeletal_meshes.free(handle);
 }
 
 // texture
 fn void ResourceManager.destroyTexture(&this, TextureHandle handle, vk::Device device) {
-    Texture* texture = this.textures[handle];
-    texture.destroy(device);
+    this.textures[handle].destroy(device);
     this.textures.free(handle);
 }
 
 fn void ResourceManager.destroyMaterial(&this, MaterialHandle handle, vk::Device device) {
-    Material* material = this.materials[handle];
-    material.destroy(device);
+    this.materials[handle].destroy(device);
     // TODO: manage resource reference count, texture
     this.materials.free(handle);
 }
 
 fn void ResourceManager.destroySkinnedMaterial(&this, SkinnedMaterialHandle handle, vk::Device device) {
-    SkinnedMaterial* material = this.skinned_materials[handle];
-    material.destroy(device);
+    this.skinned_materials[handle].destroy(device);
     // TODO: manage resource reference count, texture
     this.skinned_materials.free(handle);
 }
