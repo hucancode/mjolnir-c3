@@ -8,7 +8,7 @@ struct Scene {
     vk::DescriptorSetLayout descriptor_set_layout;
 }
 
-fn void! Scene.init(&this, vk::Device device) {
+fn void? Scene.init(&this, vk::Device device) {
     this.camera = {
         .projection = CameraProjection.PERSPECTIVE,
         .fov = 45.0,

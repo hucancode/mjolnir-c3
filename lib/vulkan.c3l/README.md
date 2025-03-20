@@ -62,7 +62,7 @@ fn void create() {
 # Enum handling
 Enum is implemented as follow
 ```cpp
-distinct IndexType = CInt;
+typedef  IndexType = CInt;
 const IndexType INDEX_TYPE_UINT16    = 0;
 const IndexType INDEX_TYPE_UINT32    = 1;
 const IndexType INDEX_TYPE_UINT8     = 1000265000;

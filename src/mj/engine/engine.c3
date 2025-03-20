@@ -3,12 +3,13 @@ import std::time;
 import std::io;
 import std::collections::list;
 import std::math;
+import libc;
 import vk;
 import glfw;
 
 const RENDER_FPS = 120;
 const FRAME_TIME = 1.0 / RENDER_FPS;
-const UPDATE_FPS = 24;
+const UPDATE_FPS = 8;
 const UPDATE_FRAME_TIME = 1.0 / UPDATE_FPS;
 struct Engine {
     glfw::Window* window;
@@ -21,16 +22,16 @@ struct Engine {
     Time start_timestamp;
 }
 
-fn void! Engine.init(&this, uint width, uint height, ZString title) {
+fn void? Engine.init(&this, uint width, uint height, ZString title) {
     io::printfn("GLFW %s",glfw::getVersionString());
     glfw::setErrorCallback(fn void(int error, ZString description) => io::printfn("GLFW error(%x): %s", error, description));
     if (!glfw::init()) {
-        return vk::VulkanError.NOT_READY?;
+        return vk::error::NOT_READY?;
     }
     glfw::windowHint(glfw::CLIENT_API, glfw::NO_API);
     this.window = glfw::createWindow(width, height, title, null, null);
     if (this.window == null) {
-        return vk::VulkanError.NOT_READY?;
+        return vk::error::NOT_READY?;
     }
     io::printfn("Window created %x", this.window);
     this.start_timestamp = time::now();
@@ -44,12 +45,12 @@ fn void! Engine.init(&this, uint width, uint height, ZString title) {
     io::printfn("Engine initialized");
 }
 
-fn void! Engine.buildScene(&this) {
+fn void? Engine.buildScene(&this) {
     this.scene.init(this.context.device)!;
     this.scene.root = this.resource.createNode(NodeType.ROOT);
 }
 
-fn void! Engine.buildRenderer(&this) {
+fn void? Engine.buildRenderer(&this) {
     QueueFamilyIndices indices = this.context.findQueueFamilies(this.context.physical_device)!;
     SwapchainSupport support= this.context.querySwapchainSupport(this.context.physical_device)!;
     this.renderer.buildSwapchain(this.context.device, this.context.surface, support.capabilities, support.formats, support.present_modes, indices.graphics_family, indices.present_family)!;
@@ -85,31 +86,37 @@ fn void! Engine.buildRenderer(&this) {
 }
 
 fn void Engine.pushSceneUniform(&this) {
-    this.context.writeBuffer(this.renderer.getUniform(), &&SceneUniform {
+    SceneUniform data = {
         .view = this.scene.viewMatrix(),
         .projection = this.scene.projectionMatrix(),
         .time = (float)time::now().diff_sec(this.start_timestamp),
-    });
+    };
+    this.context.writeBuffer(this.renderer.getUniform(), &data);
 }
-fn void! Engine.tryRender(&this) {
+fn void? Engine.tryRender(&this) {
     uint image_idx = this.renderer.begin(this.context.device)!;
     this.pushSceneUniform();
     vk::CommandBuffer command_buffer = this.renderer.getCommandBuffer();
-    List(<NodeHandle>) node_stack;
-    List(<Matrix4f>) transform_stack;
+    List{NodeHandle} node_stack;
+    List{Matrix4f} transform_stack;
+    node_stack.tinit();
+    transform_stack.tinit();
     defer {
         node_stack.free();
         transform_stack.free();
     }
-    node_stack.push(this.scene.root);
-    transform_stack.push(MATRIX4F_IDENTITY);
+    foreach (node : this.resource.nodes[this.scene.root].children) {
+        node_stack.push(node);
+        transform_stack.push(MATRIX4F_IDENTITY);
+    }
     while (!node_stack.is_empty()) {
         NodeHandle handle = node_stack.pop()!;
         Node* node = this.resource.getNode(handle);
         Matrix4f local_matrix = node.transform.toMatrix();
-        Matrix4f world_matrix = transform_stack.pop()!
-            .mul(local_matrix);
+        Matrix4f world_matrix = transform_stack.pop()!.mul(local_matrix);
         switch (node.type) {
+            case NodeType.GROUP:
+                break;
             case NodeType.SKELETAL_MESH:
                 SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
                 SkinnedMaterial* material = this.resource.getSkinnedMaterial(mesh.material);
@@ -181,10 +188,17 @@ fn void! Engine.tryRender(&this) {
                 vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
                 break;
             default:
+                io::printfn("this.resource.nodes[this.scene.root].children = %d", this.resource.nodes[this.scene.root].children.len());
+                io::printfn("Unknown node type %d, handle = %d - %d", node.type, handle.index, handle.generation);
+                // libc::exit(1);
                 break;
         }
         // io::printfn("traversing children for node %x %d", node, node.children.len());
         foreach (child : node.children) {
+            if (child.index == 0) {
+                io::printfn("a node can't have root node as a child %d %d", handle.index, handle.generation);
+                // libc::exit(1);
+            }
             node_stack.push(child);
             transform_stack.push(world_matrix);
         }
@@ -196,8 +210,8 @@ fn void Engine.render(&this) {
     if (time::now().diff_sec(this.last_frame_timestamp) < FRAME_TIME) {
         return;
     }
-    anyfault excuse = @catch(this.tryRender());
-    if (excuse == vk::VulkanError.ERROR_OUT_OF_DATE_KHR || excuse == vk::VulkanError.SUBOPTIMAL_KHR) {
+    fault excuse = @catch(this.tryRender());
+    if (excuse == vk::error::ERROR_OUT_OF_DATE_KHR || excuse == vk::error::SUBOPTIMAL_KHR) {
         excuse = @catch(this.recreateSwapchain());
         if (excuse) {
             io::printfn("Something went wrong while recreating swapchain!");
@@ -208,7 +222,7 @@ fn void Engine.render(&this) {
     this.last_frame_timestamp = time::now();
 }
 
-fn void! Engine.recreateSwapchain(&this) {
+fn void? Engine.recreateSwapchain(&this) {
     SwapchainSupport support = this.context.querySwapchainSupport(this.context.physical_device)!;
     QueueFamilyIndices indices = this.context.findQueueFamilies(this.context.physical_device)!;
     vk::deviceWaitIdle(this.context.device)!;
@@ -243,7 +257,7 @@ fn bool Engine.update(&this) {
         anim.time += delta_time;
         SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
         if (!mesh) continue;
-        AnimationTrack! track = mesh.animations[anim.name];
+        AnimationTrack? track = mesh.animations[anim.name];
         if (catch excuse = track) {
             continue;
         }
@@ -268,7 +282,7 @@ fn bool Engine.update(&this) {
     return true;
 }
 
-fn void! Engine.destroy(&this) {
+fn void? Engine.destroy(&this) {
     vk::deviceWaitIdle(this.context.device)!;
     this.resource.destroy(this.context.device);
     this.renderer.destroy(this.context.device, this.context.command_pool);

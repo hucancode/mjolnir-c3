@@ -1,4 +1,4 @@
-def DeviceTypeValue = char;
+alias DeviceTypeValue = char;
 enum DeviceType: char (inline DeviceTypeValue v) {
 	INTERGRATED = 10,
 	DISCRETE = 30,
@@ -14,6 +14,6 @@ fn void testC3Enum() @test {
 	};
 	void* data = &e;
 	char[] buffer = data[:Engine.sizeof];
-	assert(buffer[0] == DeviceType.INTERGRATED);
-	assert(buffer[1] == DeviceType.DISCRETE);
+	assert(buffer[0] == 10);
+	assert(buffer[1] == 30);
 }

@@ -1,4 +1,4 @@
-module mj::animation::keyframe (<Type>);
+module mj::animation::keyframe {Type};
 import std::sort;
 
 struct Keyframe {
@@ -12,7 +12,7 @@ struct Sample {
     Type b;
 }
 
-def MergeProc = fn Type(Type a, Type b, float alpha);
+alias MergeProc = fn Type(Type a, Type b, float alpha);
 
 fn Type sample(Keyframe[] frames, float t, MergeProc merge) {
     usz n = frames.len;
@@ -23,7 +23,8 @@ fn Type sample(Keyframe[] frames, float t, MergeProc merge) {
     if (t >= frames[n - 1].time) {
         return frames[n - 1].value;
     }
-    usz i = binarysearch(frames, Keyframe { .time = t }, fn int(Keyframe a, Keyframe b) {
+    Keyframe target = { .time = t };
+    usz i = binarysearch(frames, target, fn int(Keyframe a, Keyframe b) {
         if (a.time > b.time) {
             return 1;
         } else if (a.time < b.time) {
@@ -42,12 +43,12 @@ fn Type sample(Keyframe[] frames, float t, MergeProc merge) {
 module mj;
 import mj::animation::keyframe;
 
-def PositionKeyframe = Keyframe(<Position>);
-def RotationKeyframe = Keyframe(<Quat>);
-def ScaleKeyframe = Keyframe(<Scale>);
-def samplePosition = keyframe::sample(<Position>);
-def sampleRotation = keyframe::sample(<Quat>);
-def sampleScale = keyframe::sample(<Scale>);
+alias PositionKeyframe = Keyframe{Position};
+alias RotationKeyframe = Keyframe{Quat};
+alias ScaleKeyframe = Keyframe{Scale};
+alias samplePosition = keyframe::sample{Position};
+alias sampleRotation = keyframe::sample{Quat};
+alias sampleScale = keyframe::sample{Scale};
 
 enum AnimationStatus {
     PLAYING,

@@ -35,14 +35,14 @@ struct SkeletalMesh {
     SkinnedVertex[] vertices;
     uint[] indices;
     NodeHandle[] bones;
-    HashMap(<String, AnimationTrack>) animations;
+    HashMap{String, AnimationTrack} animations;
     DataBuffer vertex_buffer;
     DataBuffer index_buffer;
     DataBuffer bone_buffer;
     SkinnedMaterialHandle material;
 }
 
-fn void! Engine.buildSkeletalMesh(&this, SkeletalMesh* mesh, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
+fn void? Engine.buildSkeletalMesh(&this, SkeletalMesh* mesh, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
     mesh.material = material;
     mesh.vertices = vertices;
     mesh.indices = indices;
@@ -58,7 +58,7 @@ fn void! Engine.buildSkeletalMesh(&this, SkeletalMesh* mesh, SkinnedVertex[] ver
     }
 }
 
-fn void! Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHandle material, uint segments = 2, float[<4>] color = {0.125, 0.25, 0.5, 1.0}) {
+fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHandle material, uint segments = 2, float[<4>] color = {0.125, 0.25, 0.5, 1.0}) {
     if (segments < 2) segments = 2;
 
     // Create bones
@@ -258,7 +258,7 @@ fn void! Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
 
         anim.rotations = rotations[:3];
     }
-    mesh.animations["Wiggle"] = AnimationTrack {
+    mesh.animations["Wiggle"] = {
         .animations = animation_track[:segments],
         .duration = 2.0f,
     };
@@ -270,7 +270,7 @@ fn void SkeletalMesh.destroy(&this, vk::Device device) {
     if (this.bones.len > 0) {
         this.bone_buffer.destroy(device);
     }
-    foreach(track : this.animations.value_tlist()) {
+    foreach(track : this.animations.tvalues()) {
         track.destroy();
     };
     this.animations.free();
@@ -279,13 +279,13 @@ fn void SkeletalMesh.destroy(&this, vk::Device device) {
     free(this.bones);
 }
 
-fn SkeletalMeshHandle! Engine.createSkeletalMesh(&this, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
+fn SkeletalMeshHandle? Engine.createSkeletalMesh(&this, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
     SkeletalMeshHandle ret = this.resource.mallocSkeletalMesh();
     this.buildSkeletalMesh(this.resource.getSkeletalMesh(ret), vertices, indices, bones, material)!;
     return ret;
 }
 
-fn SkeletalMeshHandle! Engine.createSegmentedCube(&this, SkinnedMaterialHandle material, uint segments = 2) {
+fn SkeletalMeshHandle? Engine.createSegmentedCube(&this, SkinnedMaterialHandle material, uint segments = 2) {
     SkeletalMeshHandle ret = this.resource.mallocSkeletalMesh();
     this.buildSegmentedCube(this.resource.getSkeletalMesh(ret), material, segments)!;
     return ret;

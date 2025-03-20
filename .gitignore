@@ -1,4 +1,5 @@
 /build
+/.build
 **/*.spv
 .DS_Store
 .env
