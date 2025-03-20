@@ -1142,7 +1142,7 @@ static void *stbi__load_main(stbi__context *s, int *x, int *y, int *comp, int re
    ri->num_channels = 0;
 
    // test the formats with a very explicit header first (at least a FOURCC
-   // or typedef ive magic number first)
+   // or distinctive magic number first)
    #ifndef STBI_NO_PNG
    if (stbi__png_test(s))  return stbi__png_load(s,x,y,comp,req_comp, ri);
    #endif
