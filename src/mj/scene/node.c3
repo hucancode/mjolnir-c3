@@ -5,6 +5,7 @@ import std::math::quaternion;
 import std::collections::list;
 
 enum NodeType {
+    UNKNOWN,
     ROOT,
     GROUP,
     LIGHT,
@@ -36,17 +37,16 @@ struct Node {
     Transform transform;
 }
 
+fn void Node.init(&this) {
+    this.children.init(list::LIST_HEAP_ALLOCATOR{NodeHandle});
+    this.transform.scale = {1.0, 1.0, 1.0};
+}
+
 fn Matrix4f Transform.toMatrix(&this) {
     return this.rotation.to_matrixf()
         .translate(this.position)
         .scale(this.scale);
 }
-
-fn Transform newTransform() {
-    return { .scale = {1.0, 1.0, 1.0} };
-}
-
-
 
 fn void NodePool.unparent(&this, NodeHandle node) {
     Node* n = this.get(node);
@@ -56,8 +56,11 @@ fn void NodePool.unparent(&this, NodeHandle node) {
     Node* p = this.get(n.parent);
     if (p != null && p != n) {
         if (try i = p.children.index_of(node)) {
-            p.children.swap(i, p.children.len() - 1);
-            fault e = @catch(p.children.pop());
+            if(try last = p.children.pop()) {
+                if (i < p.children.len()) {
+                    p.children[i] = last;
+                }
+            }
         }
     }
     n.parent = node;

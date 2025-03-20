@@ -3,6 +3,7 @@ import std::time;
 import std::io;
 import std::collections::list;
 import std::math;
+import libc;
 import vk;
 import glfw;
 
@@ -98,19 +99,24 @@ fn void? Engine.tryRender(&this) {
     vk::CommandBuffer command_buffer = this.renderer.getCommandBuffer();
     List{NodeHandle} node_stack;
     List{Matrix4f} transform_stack;
+    node_stack.tinit();
+    transform_stack.tinit();
     defer {
         node_stack.free();
         transform_stack.free();
     }
-    node_stack.push(this.scene.root);
-    transform_stack.push(MATRIX4F_IDENTITY);
+    foreach (node : this.resource.nodes[this.scene.root].children) {
+        node_stack.push(node);
+        transform_stack.push(MATRIX4F_IDENTITY);
+    }
     while (!node_stack.is_empty()) {
         NodeHandle handle = node_stack.pop()!;
         Node* node = this.resource.getNode(handle);
         Matrix4f local_matrix = node.transform.toMatrix();
-        Matrix4f world_matrix = transform_stack.pop()!
-            .mul(local_matrix);
+        Matrix4f world_matrix = transform_stack.pop()!.mul(local_matrix);
         switch (node.type) {
+            case NodeType.GROUP:
+                break;
             case NodeType.SKELETAL_MESH:
                 SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
                 SkinnedMaterial* material = this.resource.getSkinnedMaterial(mesh.material);
@@ -182,6 +188,9 @@ fn void? Engine.tryRender(&this) {
                 vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
                 break;
             default:
+                io::printfn("this.resource.nodes[this.scene.root].children = %d", this.resource.nodes[this.scene.root].children.len());
+                io::printfn("Unknown node type %d, handle = %d - %d", node.type, handle.index, handle.generation);
+                // libc::exit(1);
                 break;
         }
         // io::printfn("traversing children for node %x %d", node, node.children.len());

@@ -1,6 +1,7 @@
 module mj::resource {Type};
 import std::collections::list;
 import std::core::mem;
+import std::io;
 
 bitstruct Handle: uint {
     uint index: 0..23; // lower 24 bits for index, max 8_388_608 items
@@ -19,8 +20,8 @@ struct ResourcePool {
 }
 
 fn void ResourcePool.init(&this) {
-    this.entries.tinit();
-    this.free_indices.tinit();
+    this.entries.init(list::LIST_HEAP_ALLOCATOR{Entry});
+    this.free_indices.init(list::LIST_HEAP_ALLOCATOR{uint});
 }
 
 fn Handle ResourcePool.malloc(&this) {
@@ -28,9 +29,9 @@ fn Handle ResourcePool.malloc(&this) {
     if (catch e = index) {
         Handle ret = {
             .index = (uint)this.entries.size,
-            .generation = 0
+            .generation = 1
         };
-        this.entries.push({ .generation = 0, .active = true });
+        this.entries.push({ .generation = 1, .active = true });
         return ret;
     }
     char gen = this.entries[index].generation + 1;
@@ -56,13 +57,16 @@ fn void ResourcePool.free(&this, Handle handle) {
 
 macro Type* ResourcePool.get(&this, Handle handle) @operator([]) {
     if (handle.index >= this.entries.size) {
+        io::printfn("ResourcePool.get: index (%d) out of bounds (%d)", handle.index, this.entries.size);
+        return null;
+    }
+    if (!this.entries[handle.index].active) {
+        io::printfn("ResourcePool.get: index (%d) has been freed", handle.index);
         return null;
     }
     char gen = this.entries[handle.index].generation;
     if (gen != handle.generation) {
-        return null;
-    }
-    if (this.entries[handle.index].generation != gen) {
+        io::printfn("ResourcePool.get: index (%d) has been allocated to other resource, its generation is changed from %d to %d", handle.index, gen, handle.generation);
         return null;
     }
     return &this.entries[handle.index].item;
@@ -169,7 +173,7 @@ fn Light* ResourceManager.getLight(&this, LightHandle handle) @inline {
 fn NodeHandle ResourceManager.createNode(&this, NodeType type = NodeType.GROUP) {
     NodeHandle ret = this.nodes.malloc();
     Node* node = this.nodes[ret];
-    node.transform.scale = {1.0f, 1.0f, 1.0f};
+    node.init();
     node.type = type;
     return ret;
 }
