@@ -15,7 +15,8 @@ fn float sample(Keyframe[] frames, float t) {
     if (t >= frames[n - 1].time) {
         return frames[n - 1].value;
     }
-    usz i = binarysearch(frames, Keyframe { .time = t }, fn int(Keyframe a, Keyframe b) {
+    Keyframe target = { .time = t };
+    usz i = binarysearch(frames, target, fn int(Keyframe a, Keyframe b) {
         if (a.time > b.time) {
             return 1;
         } else if (a.time < b.time) {
