@@ -43,6 +43,10 @@ fn void Node.init(&this) {
     this.transform.scale = {1.0, 1.0, 1.0};
 }
 
+fn void Node.destroy(&this) {
+    this.children.free();
+}
+
 fn Matrix4f Transform.toMatrix(&this) {
     return this.rotation.to_matrixf()
         .translate(this.position)
