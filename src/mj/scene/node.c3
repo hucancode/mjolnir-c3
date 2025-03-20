@@ -3,6 +3,7 @@ import std::io;
 import std::math::matrix;
 import std::math::quaternion;
 import std::collections::list;
+import std::core::mem::allocator;
 
 enum NodeType {
     UNKNOWN,
@@ -38,7 +39,7 @@ struct Node {
 }
 
 fn void Node.init(&this) {
-    this.children.init(list::LIST_HEAP_ALLOCATOR{NodeHandle});
+    this.children.init(allocator::heap());
     this.transform.scale = {1.0, 1.0, 1.0};
 }
 

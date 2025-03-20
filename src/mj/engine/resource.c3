@@ -1,6 +1,6 @@
 module mj::resource {Type};
 import std::collections::list;
-import std::core::mem;
+import std::core::mem::allocator;
 import std::io;
 
 bitstruct Handle: uint {
@@ -20,8 +20,8 @@ struct ResourcePool {
 }
 
 fn void ResourcePool.init(&this) {
-    this.entries.init(list::LIST_HEAP_ALLOCATOR{Entry});
-    this.free_indices.init(list::LIST_HEAP_ALLOCATOR{uint});
+    this.entries.init(allocator::heap());
+    this.free_indices.init(allocator::heap());
 }
 
 fn Handle ResourcePool.malloc(&this) {

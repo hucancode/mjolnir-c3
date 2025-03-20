@@ -195,6 +195,10 @@ fn void? Engine.tryRender(&this) {
         }
         // io::printfn("traversing children for node %x %d", node, node.children.len());
         foreach (child : node.children) {
+            if (child.index == 0) {
+                io::printfn("a node can't have root node as a child %d %d", handle.index, handle.generation);
+                // libc::exit(1);
+            }
             node_stack.push(child);
             transform_stack.push(world_matrix);
         }
