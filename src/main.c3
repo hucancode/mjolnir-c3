@@ -21,19 +21,17 @@ fn int main(String[] args) {
     StaticMeshHandle mesh = e.createCube(material)!!;
     NodeHandle[4] nodes;
     NodeHandle prev = e.scene.root;
-
     // animating tail
     for (uint i = 0;i<4;i++) {
-        NodeHandle handle = e.resource.createMeshNode(mesh);
-        nodes[i] = handle;
-        Node* node = e.resource.nodes[handle];
-        e.parentNode(prev, handle);
+        nodes[i] = e.resource.createMeshNode(mesh);
+        Node* node = e.resource.nodes[nodes[i]];
+        e.parentNode(prev, nodes[i]);
         if (i > 0) {
             node.transform.position.x = 3.0f;
         } else {
             node.transform.position.y = 2.5f;
         }
-        prev = handle;
+        prev = nodes[i];
     }
     // cube array
     for (int i = -2;i<=2;i++) {
@@ -56,6 +54,7 @@ fn int main(String[] args) {
             }
         }
         e.render();
+        //break;
     };
     return 0;
 }

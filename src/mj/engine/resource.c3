@@ -64,9 +64,13 @@ macro Type* ResourcePool.get(&this, Handle handle) @operator([]) {
         io::printfn("ResourcePool.get: index (%d) has been freed", handle.index);
         return null;
     }
-    char gen = this.entries[handle.index].generation;
-    if (gen != handle.generation) {
-        io::printfn("ResourcePool.get: index (%d) has been allocated to other resource, its generation is changed from %d to %d", handle.index, gen, handle.generation);
+    if (this.entries[handle.index].generation != handle.generation) {
+        io::printfn("ResourcePool.get: index (%d) has been freed and now belongs to other resource, its generation is changed from %d to %d", handle.index, handle.generation, this.entries[handle.index].generation);
+        io::printf("Node pool: (%d) [", this.entries.len());
+        foreach (n: this.entries) {
+            io::printf("%d, ", n.generation);
+        }
+        io::printfn("]");
         return null;
     }
     return &this.entries[handle.index].item;
@@ -175,6 +179,7 @@ fn NodeHandle ResourceManager.createNode(&this, NodeType type = NodeType.GROUP) 
     Node* node = this.nodes[ret];
     node.init();
     node.type = type;
+    node.parent = ret;
     return ret;
 }
 
