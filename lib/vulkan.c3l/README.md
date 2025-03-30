@@ -42,7 +42,7 @@ vk::InstanceCreateInfo createInfo = {
     },
 };
 fn void create() {
-    Instance! instance = vk::createInstance(&createInfo);
+    Instance? instance = vk::createInstance(&createInfo);
     if (catch excuse == instance) {
         if (excuse == vk::Error::NOT_READY) {
             io::printfn("not ready to create instance");
