@@ -75,10 +75,11 @@ fn void NodePool.parent(&this, NodeHandle parent, NodeHandle child) {
     this.unparent(child);
     Node* p = this.get(parent);
     Node* c = this.get(child);
+    io::printfn("Parenting node %x type %d to %x type %d", c, c.type.ordinal, p, p.type.ordinal);
     if (p == null || c == null) {
         return;
     }
-    io::printfn("Parenting node %x type %d to %x type %d", c, c.type, p, p.type);
+    io::printfn("Parenting node %x type %d to %x type %d", c, c.type.ordinal, p, p.type.ordinal);
     c.parent = parent;
     p.children.push(child);
 }

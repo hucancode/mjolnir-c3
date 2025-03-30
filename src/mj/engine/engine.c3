@@ -189,7 +189,7 @@ fn void? Engine.tryRender(&this) {
                 break;
             default:
                 io::printfn("this.resource.nodes[this.scene.root].children = %d", this.resource.nodes[this.scene.root].children.len());
-                io::printfn("Unknown node type %d, handle = %d - %d", node.type, handle.index, handle.generation);
+                io::printfn("Unknown node type %d, handle = %d - %d", node.type.ordinal, handle.index, handle.generation);
                 // libc::exit(1);
                 break;
         }
