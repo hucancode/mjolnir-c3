@@ -76,10 +76,10 @@ struct Animation {
     ScaleKeyframe[] scales;
 }
 
-fn void Animation.destroy(&this) {
-    free(this.positions);
-    free(this.rotations);
-    free(this.scales);
+fn void Animation.destroy(&self) {
+    free(self.positions);
+    free(self.rotations);
+    free(self.scales);
 }
 
 struct AnimationTrack {
@@ -87,31 +87,31 @@ struct AnimationTrack {
     float duration;
 }
 
-fn void AnimationTrack.destroy(&this) {
-    foreach (&animation: this.animations) {
+fn void AnimationTrack.destroy(&self) {
+    foreach (&animation: self.animations) {
         animation.destroy();
     }
-    free(this.animations);
+    free(self.animations);
 }
 
-fn void AnimationTrack.update(&this, float t, NodePool* manager, NodeHandle[] bones) {
-    foreach (&animation: this.animations) {
+fn void AnimationTrack.update(&self, float t, NodePool* manager, NodeHandle[] bones) {
+    foreach (&animation: self.animations) {
         animation.update(t, manager, bones);
     }
 }
 
-fn void Animation.update(&this, float t, NodePool* manager, NodeHandle[] bones) {
-    Node* target = manager.get(bones[this.bone_idx]);
-    if (this.positions.len > 0) {
-        target.transform.position = samplePosition(this.positions, t,
+fn void Animation.update(&self, float t, NodePool* manager, NodeHandle[] bones) {
+    Node* target = manager.get(bones[self.bone_idx]);
+    if (self.positions.len > 0) {
+        target.transform.position = samplePosition(self.positions, t,
             fn(a,b,alpha) => a*alpha + b*(1.0f - alpha));
     }
-    if (this.rotations.len > 0) {
-        target.transform.rotation = sampleRotation(this.rotations, t,
+    if (self.rotations.len > 0) {
+        target.transform.rotation = sampleRotation(self.rotations, t,
             fn(a,b,alpha) => a.slerp(b, alpha));
     }
-    if (this.scales.len > 0) {
-        target.transform.scale = sampleScale(this.scales, t,
+    if (self.scales.len > 0) {
+        target.transform.scale = sampleScale(self.scales, t,
             fn(a,b,alpha) => a*alpha + b*(1.0f - alpha));
     }
 }

@@ -19,66 +19,66 @@ struct ResourcePool {
     List{uint} free_indices;
 }
 
-fn void ResourcePool.init(&this) {
-    this.entries.init(allocator::heap());
-    this.free_indices.init(allocator::heap());
+fn void ResourcePool.init(&self) {
+    self.entries.init(allocator::heap());
+    self.free_indices.init(allocator::heap());
 }
 
-fn Handle ResourcePool.malloc(&this) {
-    uint? index = this.free_indices.pop();
+fn Handle ResourcePool.malloc(&self) {
+    uint? index = self.free_indices.pop();
     if (catch e = index) {
         Handle ret = {
-            .index = (uint)this.entries.size,
+            .index = (uint)self.entries.size,
             .generation = 1
         };
-        this.entries.push({ .generation = 1, .active = true });
+        self.entries.push({ .generation = 1, .active = true });
         return ret;
     }
-    char gen = this.entries[index].generation + 1;
-    this.entries[index].generation = gen;
-    this.entries[index].active = true;
+    char gen = self.entries[index].generation + 1;
+    self.entries[index].generation = gen;
+    self.entries[index].active = true;
     return { .index = index, .generation = gen };
 }
 
-fn void ResourcePool.free(&this, Handle handle) {
-    if (handle.index >= this.entries.size) {
+fn void ResourcePool.free(&self, Handle handle) {
+    if (handle.index >= self.entries.size) {
         return;
     }
-    char gen = this.entries[handle.index].generation;
+    char gen = self.entries[handle.index].generation;
     if (gen != handle.generation) {
         return;
     }
-    if (!this.entries[handle.index].active) {
+    if (!self.entries[handle.index].active) {
         return;
     }
-    this.entries[handle.index].active = false;
-    this.free_indices.push(handle.index);
+    self.entries[handle.index].active = false;
+    self.free_indices.push(handle.index);
 }
 
-macro Type* ResourcePool.get(&this, Handle handle) @operator([]) {
-    if (handle.index >= this.entries.size) {
-        io::printfn("ResourcePool.get: index (%d) out of bounds (%d)", handle.index, this.entries.size);
+macro Type* ResourcePool.get(&self, Handle handle) @operator([]) {
+    if (handle.index >= self.entries.size) {
+        io::printfn("ResourcePool.get: index (%d) out of bounds (%d)", handle.index, self.entries.size);
         return null;
     }
-    if (!this.entries[handle.index].active) {
+    if (!self.entries[handle.index].active) {
         io::printfn("ResourcePool.get: index (%d) has been freed", handle.index);
         return null;
     }
-    if (this.entries[handle.index].generation != handle.generation) {
-        io::printfn("ResourcePool.get: index (%d) has been freed and now belongs to other resource, its generation is changed from %d to %d", handle.index, handle.generation, this.entries[handle.index].generation);
-        io::printf("Node pool: (%d) [", this.entries.len());
-        foreach (n: this.entries) {
+    if (self.entries[handle.index].generation != handle.generation) {
+        io::printfn("ResourcePool.get: index (%d) has been freed and now belongs to other resource, its generation is changed from %d to %d", handle.index, handle.generation, self.entries[handle.index].generation);
+        io::printf("Node pool: (%d) [", self.entries.len());
+        foreach (n: self.entries) {
             io::printf("%d, ", n.generation);
         }
         io::printfn("]");
         return null;
     }
-    return &this.entries[handle.index].item;
+    return &self.entries[handle.index].item;
 }
 
-fn void ResourcePool.destroy(&this) {
-    this.entries.free();
-    this.free_indices.free();
+fn void ResourcePool.destroy(&self) {
+    self.entries.free();
+    self.free_indices.free();
 }
 
 module mj;
@@ -112,189 +112,189 @@ struct ResourceManager {
     NodePool nodes;
 }
 
-fn void ResourceManager.init(&this) {
-    this.meshes.init();
-    this.skeletal_meshes.init();
-    this.materials.init();
-    this.skinned_materials.init();
-    this.textures.init();
-    this.lights.init();
-    this.nodes.init();
+fn void ResourceManager.init(&self) {
+    self.meshes.init();
+    self.skeletal_meshes.init();
+    self.materials.init();
+    self.skinned_materials.init();
+    self.textures.init();
+    self.lights.init();
+    self.nodes.init();
 }
 
-fn StaticMeshHandle ResourceManager.mallocMesh(&this) @inline {
-    return this.meshes.malloc();
+fn StaticMeshHandle ResourceManager.mallocMesh(&self) @inline {
+    return self.meshes.malloc();
 }
 
-fn StaticMesh* ResourceManager.getMesh(&this, StaticMeshHandle handle) @inline {
-    return this.meshes[handle];
+fn StaticMesh* ResourceManager.getMesh(&self, StaticMeshHandle handle) @inline {
+    return self.meshes[handle];
 }
 
-fn SkeletalMeshHandle ResourceManager.mallocSkeletalMesh(&this) @inline {
-    return this.skeletal_meshes.malloc();
+fn SkeletalMeshHandle ResourceManager.mallocSkeletalMesh(&self) @inline {
+    return self.skeletal_meshes.malloc();
 }
 
-fn SkeletalMesh* ResourceManager.getSkeletalMesh(&this, SkeletalMeshHandle handle) @inline {
-    return this.skeletal_meshes[handle];
+fn SkeletalMesh* ResourceManager.getSkeletalMesh(&self, SkeletalMeshHandle handle) @inline {
+    return self.skeletal_meshes[handle];
 }
 
-fn MaterialHandle ResourceManager.mallocMaterial(&this) @inline {
-    return this.materials.malloc();
+fn MaterialHandle ResourceManager.mallocMaterial(&self) @inline {
+    return self.materials.malloc();
 }
 
-fn Material* ResourceManager.getMaterial(&this, MaterialHandle handle) @inline {
-    return this.materials[handle];
+fn Material* ResourceManager.getMaterial(&self, MaterialHandle handle) @inline {
+    return self.materials[handle];
 }
 
-fn SkinnedMaterialHandle ResourceManager.createSkinnedMaterial(&this) @inline {
-    return this.skinned_materials.malloc();
+fn SkinnedMaterialHandle ResourceManager.createSkinnedMaterial(&self) @inline {
+    return self.skinned_materials.malloc();
 }
 
-fn SkinnedMaterial* ResourceManager.getSkinnedMaterial(&this, SkinnedMaterialHandle handle) @inline {
-    return this.skinned_materials[handle];
+fn SkinnedMaterial* ResourceManager.getSkinnedMaterial(&self, SkinnedMaterialHandle handle) @inline {
+    return self.skinned_materials[handle];
 }
 
-fn TextureHandle ResourceManager.mallocTexture(&this) @inline {
-    return this.textures.malloc();
+fn TextureHandle ResourceManager.mallocTexture(&self) @inline {
+    return self.textures.malloc();
 }
 
-fn Texture* ResourceManager.getTexture(&this, TextureHandle handle) @inline {
-    return this.textures[handle];
+fn Texture* ResourceManager.getTexture(&self, TextureHandle handle) @inline {
+    return self.textures[handle];
 }
 
-fn LightHandle ResourceManager.createLight(&this){
-    LightHandle ret = this.lights.malloc();
-    Light* light = this.lights[ret];
+fn LightHandle ResourceManager.createLight(&self){
+    LightHandle ret = self.lights.malloc();
+    Light* light = self.lights[ret];
     light.color = {1.0f, 1.0f, 1.0f};
     light.intensity = 1.0f;
     return ret;
 }
 
-fn Light* ResourceManager.getLight(&this, LightHandle handle) @inline {
-    return this.lights[handle];
+fn Light* ResourceManager.getLight(&self, LightHandle handle) @inline {
+    return self.lights[handle];
 }
 
-fn NodeHandle ResourceManager.createNode(&this, NodeType type = NodeType.GROUP) {
-    NodeHandle ret = this.nodes.malloc();
-    Node* node = this.nodes[ret];
+fn NodeHandle ResourceManager.createNode(&self, NodeType type = NodeType.GROUP) {
+    NodeHandle ret = self.nodes.malloc();
+    Node* node = self.nodes[ret];
     node.init();
     node.type = type;
     node.parent = ret;
     return ret;
 }
 
-fn Node* ResourceManager.getNode(&this, NodeHandle handle) @inline {
-    return this.nodes[handle];
+fn Node* ResourceManager.getNode(&self, NodeHandle handle) @inline {
+    return self.nodes[handle];
 }
 
-fn Node* Engine.getNode(&this, NodeHandle handle) @inline {
-    return this.resource.getNode(handle);
+fn Node* Engine.getNode(&self, NodeHandle handle) @inline {
+    return self.resource.getNode(handle);
 }
 
-fn NodeHandle ResourceManager.createMeshNode(&this, StaticMeshHandle mesh) {
-    NodeHandle ret = this.createNode(NodeType.STATIC_MESH);
-    Node* node = this.nodes[ret];
+fn NodeHandle ResourceManager.createMeshNode(&self, StaticMeshHandle mesh) {
+    NodeHandle ret = self.createNode(NodeType.STATIC_MESH);
+    Node* node = self.nodes[ret];
     node.mesh = mesh;
     return ret;
 }
 
-fn NodeHandle ResourceManager.createSkeletalMeshNode(&this, SkeletalMeshHandle mesh) {
-    NodeHandle ret = this.createNode(NodeType.SKELETAL_MESH);
-    Node* node = this.nodes[ret];
+fn NodeHandle ResourceManager.createSkeletalMeshNode(&self, SkeletalMeshHandle mesh) {
+    NodeHandle ret = self.createNode(NodeType.SKELETAL_MESH);
+    Node* node = self.nodes[ret];
     node.skeletal_mesh = mesh;
     return ret;
 }
 
-fn NodeHandle ResourceManager.createLightNode(&this, LightHandle light) {
-    NodeHandle node = this.createNode(NodeType.LIGHT);
-    Node* n = this.nodes[node];
+fn NodeHandle ResourceManager.createLightNode(&self, LightHandle light) {
+    NodeHandle node = self.createNode(NodeType.LIGHT);
+    Node* n = self.nodes[node];
     n.light = light;
     return node;
 }
 
-fn void ResourceManager.destroyNode(&this, NodeHandle handle) {
-    this.nodes.unparent(handle);
-    this.nodes[handle].destroy();
+fn void ResourceManager.destroyNode(&self, NodeHandle handle) {
+    self.nodes.unparent(handle);
+    self.nodes[handle].destroy();
     // TODO: manage resource reference count, mesh, skeletal mesh, light
-    this.nodes.free(handle);
+    self.nodes.free(handle);
 }
 
-fn void ResourceManager.destroyMesh(&this, StaticMeshHandle handle, vk::Device device) {
-    this.meshes[handle].destroy(device);
+fn void ResourceManager.destroyMesh(&self, StaticMeshHandle handle, vk::Device device) {
+    self.meshes[handle].destroy(device);
     // TODO: manage resource reference count, material
-    this.meshes.free(handle);
+    self.meshes.free(handle);
 }
 
-fn void ResourceManager.destroySkeletalMesh(&this, SkeletalMeshHandle handle, vk::Device device) {
-    this.skeletal_meshes[handle].destroy(device);
+fn void ResourceManager.destroySkeletalMesh(&self, SkeletalMeshHandle handle, vk::Device device) {
+    self.skeletal_meshes[handle].destroy(device);
     // TODO: manage resource reference count, material
-    this.skeletal_meshes.free(handle);
+    self.skeletal_meshes.free(handle);
 }
 
 // texture
-fn void ResourceManager.destroyTexture(&this, TextureHandle handle, vk::Device device) {
-    this.textures[handle].destroy(device);
-    this.textures.free(handle);
+fn void ResourceManager.destroyTexture(&self, TextureHandle handle, vk::Device device) {
+    self.textures[handle].destroy(device);
+    self.textures.free(handle);
 }
 
-fn void ResourceManager.destroyMaterial(&this, MaterialHandle handle, vk::Device device) {
-    this.materials[handle].destroy(device);
+fn void ResourceManager.destroyMaterial(&self, MaterialHandle handle, vk::Device device) {
+    self.materials[handle].destroy(device);
     // TODO: manage resource reference count, texture
-    this.materials.free(handle);
+    self.materials.free(handle);
 }
 
-fn void ResourceManager.destroySkinnedMaterial(&this, SkinnedMaterialHandle handle, vk::Device device) {
-    this.skinned_materials[handle].destroy(device);
+fn void ResourceManager.destroySkinnedMaterial(&self, SkinnedMaterialHandle handle, vk::Device device) {
+    self.skinned_materials[handle].destroy(device);
     // TODO: manage resource reference count, texture
-    this.skinned_materials.free(handle);
+    self.skinned_materials.free(handle);
 }
 
-fn void ResourceManager.destroyLight(&this, LightHandle handle) {
-    this.lights.free(handle);
+fn void ResourceManager.destroyLight(&self, LightHandle handle) {
+    self.lights.free(handle);
 }
 
-fn void ResourceManager.destroy(&this, vk::Device device) {
-    foreach(i, &entry : this.nodes.entries) {
+fn void ResourceManager.destroy(&self, vk::Device device) {
+    foreach(i, &entry : self.nodes.entries) {
         if (entry.active) {
-            this.destroyNode({.index = (uint)i, .generation = entry.generation});
+            self.destroyNode({.index = (uint)i, .generation = entry.generation});
         }
     }
-    this.nodes.destroy();
-    foreach(i, &entry : this.meshes.entries) {
+    self.nodes.destroy();
+    foreach(i, &entry : self.meshes.entries) {
         if (entry.active) {
             io::printfn("Destroying mesh %d", i);
-            this.destroyMesh({.index = (uint)i, .generation = entry.generation}, device);
+            self.destroyMesh({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
-    this.meshes.destroy();
-    foreach(i, &entry : this.skeletal_meshes.entries) {
+    self.meshes.destroy();
+    foreach(i, &entry : self.skeletal_meshes.entries) {
         if (entry.active) {
-            this.destroySkeletalMesh({.index = (uint)i, .generation = entry.generation}, device);
+            self.destroySkeletalMesh({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
-    this.skeletal_meshes.destroy();
-    foreach(i, &entry : this.textures.entries) {
+    self.skeletal_meshes.destroy();
+    foreach(i, &entry : self.textures.entries) {
         if (entry.active) {
-            this.destroyTexture({.index = (uint)i, .generation = entry.generation}, device);
+            self.destroyTexture({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
-    this.textures.destroy();
-    foreach(i, &entry : this.materials.entries) {
+    self.textures.destroy();
+    foreach(i, &entry : self.materials.entries) {
         if (entry.active) {
-            this.destroyMaterial({.index = (uint)i, .generation = entry.generation}, device);
+            self.destroyMaterial({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
-    this.materials.destroy();
-    foreach(i, &entry : this.skinned_materials.entries) {
+    self.materials.destroy();
+    foreach(i, &entry : self.skinned_materials.entries) {
         if (entry.active) {
-            this.destroySkinnedMaterial({.index = (uint)i, .generation = entry.generation}, device);
+            self.destroySkinnedMaterial({.index = (uint)i, .generation = entry.generation}, device);
         }
     }
-    this.skinned_materials.destroy();
-    foreach(i, &entry : this.lights.entries) {
+    self.skinned_materials.destroy();
+    foreach(i, &entry : self.lights.entries) {
         if (entry.active) {
-            this.destroyLight({.index = (uint)i, .generation = entry.generation});
+            self.destroyLight({.index = (uint)i, .generation = entry.generation});
         }
     }
-    this.lights.destroy();
+    self.lights.destroy();
 }

@@ -26,24 +26,24 @@ struct Camera {
     Quat rotation;
 }
 
-fn Matrix4f Camera.calculateProjectionMatrix(&this) {
-    switch (this.projection) {
+fn Matrix4f Camera.calculateProjectionMatrix(&self) {
+    switch (self.projection) {
         case CameraProjection.PERSPECTIVE:
-            return matrix::perspective{float}(this.fov, this.aspect_ratio, this.near, this.far)
+            return matrix::perspective{float}(self.fov, self.aspect_ratio, self.near, self.far)
                 .transpose();
         case CameraProjection.ORTHOGRAPHIC:
-            return matrix::ortho{float}(0.0, this.right, 0.0, this.bottom, this.near, this.far)
+            return matrix::ortho{float}(0.0, self.right, 0.0, self.bottom, self.near, self.far)
                 .transpose();
     }
 }
 
-fn Matrix4f Camera.calculateLookatMatrix(&this, Position target = {}) {
-    return matrix::look_at{float}(this.position, target, this.up)
+fn Matrix4f Camera.calculateLookatMatrix(&self, Position target = {}) {
+    return matrix::look_at{float}(self.position, target, self.up)
         .transpose();
 }
 
-fn Matrix4f Camera.calculateViewMatrix(&this) {
-    return this.rotation.to_matrixf()
-        .translate(this.position)
+fn Matrix4f Camera.calculateViewMatrix(&self) {
+    return self.rotation.to_matrixf()
+        .translate(self.position)
         ;
 }

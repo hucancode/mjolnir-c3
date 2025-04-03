@@ -24,9 +24,9 @@ struct SwapchainSupport {
     vk::PresentModeKHR[] present_modes;
 }
 
-fn void SwapchainSupport.free(&this) {
-    free(this.formats);
-    free(this.present_modes);
+fn void SwapchainSupport.free(&self) {
+    free(self.formats);
+    free(self.present_modes);
 }
 
 struct VulkanContext {
@@ -47,28 +47,28 @@ struct VulkanContext {
     vk::CommandPool command_pool;
 }
 
-fn void? VulkanContext.init(&this, glfw::Window* window) {
-    this.window = window;
-    this.initVulkanInstance()!;
-    this.initWindowSurface()!;
-    this.initPhysicalDevice()!;
-    this.initLogicalDevice()!;
-    this.initCommandPool()!;
-    this.initDescriptorPool()!;
+fn void? VulkanContext.init(&self, glfw::Window* window) {
+    self.window = window;
+    self.initVulkanInstance()!;
+    self.initWindowSurface()!;
+    self.initPhysicalDevice()!;
+    self.initLogicalDevice()!;
+    self.initCommandPool()!;
+    self.initDescriptorPool()!;
 }
 
-fn void? VulkanContext.destroy(&this) {
-    vk::destroyDescriptorPool(this.device, this.descriptor_pool);
-    vk::destroyCommandPool(this.device, this.command_pool);
-    vk::destroyDevice(this.device);
-    vk::destroySurfaceKHR(this.instance, this.surface);
+fn void? VulkanContext.destroy(&self) {
+    vk::destroyDescriptorPool(self.device, self.descriptor_pool);
+    vk::destroyCommandPool(self.device, self.command_pool);
+    vk::destroyDevice(self.device);
+    vk::destroySurfaceKHR(self.instance, self.surface);
     $if ENABLE_VALIDATION_LAYERS:
-        vk::destroyDebugUtilsMessengerEXT(this.instance, this.debug_messenger);
+        vk::destroyDebugUtilsMessengerEXT(self.instance, self.debug_messenger);
     $endif
-    vk::destroyInstance(this.instance);
+    vk::destroyInstance(self.instance);
 }
 
-fn void? VulkanContext.initVulkanInstance(&this) {
+fn void? VulkanContext.initVulkanInstance(&self) {
     vk::loadProcAddressesGlobal(&glfw::getInstanceProcAddress);
     ulong extensionCount;
     ZString* glfwExtensions = glfw::getRequiredInstanceExtensions(&extensionCount);
@@ -124,28 +124,28 @@ fn void? VulkanContext.initVulkanInstance(&this) {
     for (uint i = 0; i < extensionCount; i++) {
         io::printfn("Required extension: %s", extensions[i]);
     }
-    this.instance = vk::createInstance(&createInfo)!;
-    vk::loadProcAddressesInstance(this.instance);
+    self.instance = vk::createInstance(&createInfo)!;
+    vk::loadProcAddressesInstance(self.instance);
     $if ENABLE_VALIDATION_LAYERS:
-        this.debug_messenger = vk::createDebugUtilsMessengerEXT(this.instance, &debugCreateInfo)!;
+        self.debug_messenger = vk::createDebugUtilsMessengerEXT(self.instance, &debugCreateInfo)!;
     $endif
-    io::printfn("Instance created %x", this.instance);
+    io::printfn("Instance created %x", self.instance);
 }
 
-fn void? VulkanContext.initWindowSurface(&this) {
-    io::printfn("Initializing window surface with instance %x", this.instance);
-    vk::check(glfw::createWindowSurface(this.instance, this.window, null, &this.surface))!;
+fn void? VulkanContext.initWindowSurface(&self) {
+    io::printfn("Initializing window surface with instance %x", self.instance);
+    vk::check(glfw::createWindowSurface(self.instance, self.window, null, &self.surface))!;
 }
 
-fn SwapchainSupport? VulkanContext.querySwapchainSupport(&this, vk::PhysicalDevice device) {
+fn SwapchainSupport? VulkanContext.querySwapchainSupport(&self, vk::PhysicalDevice device) {
     return {
-        .capabilities = vk::getPhysicalDeviceSurfaceCapabilitiesKHR(device, this.surface)!,
-        .formats = vk::getPhysicalDeviceSurfaceFormatsKHR(device, this.surface)!,
-        .present_modes = vk::getPhysicalDeviceSurfacePresentModesKHR(device, this.surface)!,
+        .capabilities = vk::getPhysicalDeviceSurfaceCapabilitiesKHR(device, self.surface)!,
+        .formats = vk::getPhysicalDeviceSurfaceFormatsKHR(device, self.surface)!,
+        .present_modes = vk::getPhysicalDeviceSurfacePresentModesKHR(device, self.surface)!,
     };
 }
 
-fn uint VulkanContext.scorePhysicalDevice(&this, vk::PhysicalDevice device) {
+fn uint VulkanContext.scorePhysicalDevice(&self, vk::PhysicalDevice device) {
     uint score = 0;
     vk::PhysicalDeviceProperties properties = vk::getPhysicalDeviceProperties(device);
     vk::PhysicalDeviceFeatures features = vk::getPhysicalDeviceFeatures(device);
@@ -180,13 +180,13 @@ fn uint VulkanContext.scorePhysicalDevice(&this, vk::PhysicalDevice device) {
             return 0;
         }
     }
-    SwapchainSupport? support = this.querySwapchainSupport(device);
+    SwapchainSupport? support = self.querySwapchainSupport(device);
     if (catch excuse = support) {
         io::printfn("Cound not get swapchain support for %s", deviceName);
         return 0;
     }
     support.free();
-    QueueFamilyIndices? indices = this.findQueueFamilies(device);
+    QueueFamilyIndices? indices = self.findQueueFamilies(device);
     if (catch excuse = indices) {
         io::printfn("Cound not get queue families for %s", deviceName);
         return 0;
@@ -207,20 +207,20 @@ fn uint VulkanContext.scorePhysicalDevice(&this, vk::PhysicalDevice device) {
     return score;
 }
 
-fn void? VulkanContext.initPhysicalDevice(&this) {
-    vk::PhysicalDevice[] devices = vk::enumeratePhysicalDevices(this.instance)!;
+fn void? VulkanContext.initPhysicalDevice(&self) {
+    vk::PhysicalDevice[] devices = vk::enumeratePhysicalDevices(self.instance)!;
     defer free(devices);
-    this.physical_device = devices[0];
+    self.physical_device = devices[0];
     uint bestScore = 0;
     foreach (device: devices) {
-        int score = this.scorePhysicalDevice(device);
+        int score = self.scorePhysicalDevice(device);
         io::printfn("Device %x score: %d", device, score);
         if (score > bestScore) {
-            this.physical_device = device;
+            self.physical_device = device;
             bestScore = score;
         }
     }
-    io::printfn("Selected physical device: %x with score %d", this.physical_device, bestScore);
+    io::printfn("Selected physical device: %x with score %d", self.physical_device, bestScore);
 }
 
 struct QueueFamilyIndices {
@@ -228,7 +228,7 @@ struct QueueFamilyIndices {
     uint present_family;
 }
 
-fn QueueFamilyIndices? VulkanContext.findQueueFamilies(&this, vk::PhysicalDevice physical_device) {
+fn QueueFamilyIndices? VulkanContext.findQueueFamilies(&self, vk::PhysicalDevice physical_device) {
     vk::QueueFamilyProperties[] families = vk::getPhysicalDeviceQueueFamilyProperties(physical_device);
     defer free(families);
     QueueFamilyIndices indices;
@@ -240,7 +240,7 @@ fn QueueFamilyIndices? VulkanContext.findQueueFamilies(&this, vk::PhysicalDevice
             foundGraphics = true;
             io::printfn("Queue family %d support graphics", i);
         }
-        uint supported = glfw::getPhysicalDevicePresentationSupport(this.instance, physical_device, i);
+        uint supported = glfw::getPhysicalDevicePresentationSupport(self.instance, physical_device, i);
         if (supported) {
             indices.present_family = i;
             foundPresent = true;
@@ -253,15 +253,15 @@ fn QueueFamilyIndices? VulkanContext.findQueueFamilies(&this, vk::PhysicalDevice
     return vk::error::ERROR_UNKNOWN?;
 }
 
-fn void? VulkanContext.initLogicalDevice(&this) {
-    QueueFamilyIndices indices = this.findQueueFamilies(this.physical_device)!;
-    SwapchainSupport support = this.querySwapchainSupport(this.physical_device)!;
+fn void? VulkanContext.initLogicalDevice(&self) {
+    QueueFamilyIndices indices = self.findQueueFamilies(self.physical_device)!;
+    SwapchainSupport support = self.querySwapchainSupport(self.physical_device)!;
     defer support.free();
-    this.graphics_family = indices.graphics_family;
-    this.present_family = indices.present_family;
-    this.surface_capabilities = support.capabilities;
-    this.surface_formats = support.formats;
-    this.present_modes = support.present_modes;
+    self.graphics_family = indices.graphics_family;
+    self.present_family = indices.present_family;
+    self.surface_capabilities = support.capabilities;
+    self.surface_formats = support.formats;
+    self.present_modes = support.present_modes;
     ZString[] layers;
     $if ENABLE_VALIDATION_LAYERS:
         layers = {
@@ -274,7 +274,7 @@ fn void? VulkanContext.initLogicalDevice(&this) {
     };
     vk::DeviceQueueCreateInfo queueCreateInfo = {
         .s_type = vk::STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queue_family_index = this.graphics_family,
+        .queue_family_index = self.graphics_family,
         .queue_count = 1,
         .p_queue_priorities = &&1.0f,
     };
@@ -290,12 +290,12 @@ fn void? VulkanContext.initLogicalDevice(&this) {
         createInfo.enabled_layer_count = layers.len;
         createInfo.pp_enabled_layer_names = layers.ptr;
     $endif
-    this.device = vk::createDevice(this.physical_device, &createInfo)!;
-    this.graphics_queue = vk::getDeviceQueue(this.device, this.graphics_family, 0);
-    this.present_queue = vk::getDeviceQueue(this.device, this.present_family, 0);
+    self.device = vk::createDevice(self.physical_device, &createInfo)!;
+    self.graphics_queue = vk::getDeviceQueue(self.device, self.graphics_family, 0);
+    self.present_queue = vk::getDeviceQueue(self.device, self.present_family, 0);
 }
 
-fn void? VulkanContext.initDescriptorPool(&this) {
+fn void? VulkanContext.initDescriptorPool(&self) {
     vk::DescriptorPoolSize sampler = {
         .type = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptor_count = MAX_SAMPLER_COUNT,
@@ -314,25 +314,25 @@ fn void? VulkanContext.initDescriptorPool(&this) {
         .p_pool_sizes    = &pool_sizes,
         .max_sets       = MAX_FRAMES_IN_FLIGHT + ACTIVE_MATERIAL_COUNT,
     };
-    this.descriptor_pool = vk::createDescriptorPool(this.device, &create_info)!;
+    self.descriptor_pool = vk::createDescriptorPool(self.device, &create_info)!;
 }
 
-fn vk::ShaderModule? VulkanContext.createShaderModule(&this, char[] code) {
+fn vk::ShaderModule? VulkanContext.createShaderModule(&self, char[] code) {
     vk::ShaderModuleCreateInfo createInfo = {
         .s_type = vk::STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .code_size = code.len,
         .p_code = (uint*)code.ptr,
     };
-    return vk::createShaderModule(this.device, &createInfo)!;
+    return vk::createShaderModule(self.device, &createInfo)!;
 }
 
-fn void? VulkanContext.initCommandPool(&this) {
+fn void? VulkanContext.initCommandPool(&self) {
     vk::CommandPoolCreateInfo info = {
         .s_type = vk::STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = { .reset_command_buffer },
-        .queue_family_index = this.graphics_family,
+        .queue_family_index = self.graphics_family,
     };
-    this.command_pool = vk::createCommandPool(this.device, &info)!;
+    self.command_pool = vk::createCommandPool(self.device, &info)!;
 }
 
 struct DataBuffer {
@@ -351,15 +351,15 @@ struct ImageBuffer {
     vk::ImageView view;
 }
 
-fn vk::CommandBuffer? VulkanContext.beginSingleTimeCommand(&this) {
+fn vk::CommandBuffer? VulkanContext.beginSingleTimeCommand(&self) {
     vk::CommandBuffer ret;
     vk::CommandBufferAllocateInfo allocateInfo = {
         .s_type = vk::STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .level = vk::COMMAND_BUFFER_LEVEL_PRIMARY,
-        .command_pool = this.command_pool,
+        .command_pool = self.command_pool,
         .command_buffer_count = 1,
     };
-    vk::allocateCommandBuffers(this.device, &allocateInfo, &ret)!;
+    vk::allocateCommandBuffers(self.device, &allocateInfo, &ret)!;
     vk::CommandBufferBeginInfo beginInfo = {
         .s_type = vk::STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = { .one_time_submit },
@@ -368,19 +368,19 @@ fn vk::CommandBuffer? VulkanContext.beginSingleTimeCommand(&this) {
     return ret;
 }
 
-fn void? VulkanContext.endSingleTimeCommand(&this, vk::CommandBuffer command_buffer) {
-    defer vk::freeCommandBuffers(this.device, this.command_pool, 1, &command_buffer);
+fn void? VulkanContext.endSingleTimeCommand(&self, vk::CommandBuffer command_buffer) {
+    defer vk::freeCommandBuffers(self.device, self.command_pool, 1, &command_buffer);
     vk::endCommandBuffer(command_buffer)!;
     vk::SubmitInfo submitInfo = {
         .s_type = vk::STRUCTURE_TYPE_SUBMIT_INFO,
         .command_buffer_count = 1,
         .p_command_buffers = &command_buffer,
     };
-    vk::queueSubmit(this.graphics_queue, 1, &submitInfo)!;
-    vk::queueWaitIdle(this.graphics_queue)!;
+    vk::queueSubmit(self.graphics_queue, 1, &submitInfo)!;
+    vk::queueWaitIdle(self.graphics_queue)!;
 }
 
-fn ImageBuffer? VulkanContext.mallocImageBuffer(&this, vk::Format format, uint width, uint height) {
+fn ImageBuffer? VulkanContext.mallocImageBuffer(&self, vk::Format format, uint width, uint height) {
     vk::ImageCreateInfo create_info = {
         .s_type = vk::STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .image_type = vk::IMAGE_TYPE_2D,
@@ -399,16 +399,16 @@ fn ImageBuffer? VulkanContext.mallocImageBuffer(&this, vk::Format format, uint w
         .samples = { .n_1 },
     };
     ImageBuffer ret;
-    ret.image = vk::createImage(this.device, &create_info)!;
-    ret.memory = this.allocateMemory(vk::getImageMemoryRequirements(this.device, ret.image))!;
+    ret.image = vk::createImage(self.device, &create_info)!;
+    ret.memory = self.allocateMemory(vk::getImageMemoryRequirements(self.device, ret.image))!;
     ret.width = width;
     ret.height = height;
     ret.format = format;
-    vk::bindImageMemory(this.device, ret.image, ret.memory, 0)!;
+    vk::bindImageMemory(self.device, ret.image, ret.memory, 0)!;
     return ret;
 }
 
-fn DataBuffer? VulkanContext.mallocLocalBuffer(&this, usz size, vk::BufferUsageFlags usage) {
+fn DataBuffer? VulkanContext.mallocLocalBuffer(&self, usz size, vk::BufferUsageFlags usage) {
     vk::BufferCreateInfo create_info = {
         .s_type = vk::STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = (vk::DeviceSize)size,
@@ -417,13 +417,13 @@ fn DataBuffer? VulkanContext.mallocLocalBuffer(&this, usz size, vk::BufferUsageF
     };
     DataBuffer ret;
     ret.size = size;
-    ret.buffer = vk::createBuffer(this.device, &create_info)!;
-    ret.memory = this.allocateMemory(vk::getBufferMemoryRequirements(this.device, ret.buffer), { .host_visible, .host_coherent })!;
-    vk::bindBufferMemory(this.device, ret.buffer, ret.memory, 0)!;
+    ret.buffer = vk::createBuffer(self.device, &create_info)!;
+    ret.memory = self.allocateMemory(vk::getBufferMemoryRequirements(self.device, ret.buffer), { .host_visible, .host_coherent })!;
+    vk::bindBufferMemory(self.device, ret.buffer, ret.memory, 0)!;
     return ret;
 }
 
-fn DataBuffer? VulkanContext.mallocHostVisibleBuffer(&this, usz size, vk::BufferUsageFlags usage = { .transfer_src }) {
+fn DataBuffer? VulkanContext.mallocHostVisibleBuffer(&self, usz size, vk::BufferUsageFlags usage = { .transfer_src }) {
     vk::BufferCreateInfo create_info = {
         .s_type = vk::STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = (vk::DeviceSize)size,
@@ -432,58 +432,58 @@ fn DataBuffer? VulkanContext.mallocHostVisibleBuffer(&this, usz size, vk::Buffer
     };
     DataBuffer ret;
     ret.size = size;
-    ret.buffer = vk::createBuffer(this.device, &create_info)!;
-    ret.memory = this.allocateMemory(vk::getBufferMemoryRequirements(this.device, ret.buffer), { .host_visible, .host_coherent })!;
-    vk::bindBufferMemory(this.device, ret.buffer, ret.memory, 0)!;
-    ret.mapped = vk::mapMemory(this.device, ret.memory, 0, (vk::DeviceSize)size)!;
+    ret.buffer = vk::createBuffer(self.device, &create_info)!;
+    ret.memory = self.allocateMemory(vk::getBufferMemoryRequirements(self.device, ret.buffer), { .host_visible, .host_coherent })!;
+    vk::bindBufferMemory(self.device, ret.buffer, ret.memory, 0)!;
+    ret.mapped = vk::mapMemory(self.device, ret.memory, 0, (vk::DeviceSize)size)!;
     return ret;
 }
 
-fn DataBuffer? VulkanContext.createLocalBuffer(&this, void* data, usz size, vk::BufferUsageFlags usage) {
+fn DataBuffer? VulkanContext.createLocalBuffer(&self, void* data, usz size, vk::BufferUsageFlags usage) {
     io::printfn("Creating local buffer size %d", size);
-    DataBuffer staging = this.createHostVisibleBuffer(data, size, { .transfer_src })!;
+    DataBuffer staging = self.createHostVisibleBuffer(data, size, { .transfer_src })!;
     vk::BufferUsageFlags usage_flags = { .transfer_dst };
-    DataBuffer ret = this.mallocLocalBuffer(size, usage | usage_flags)!;
-    this.copyBuffer(&ret, &staging)!;
-    staging.destroy(this.device);
+    DataBuffer ret = self.mallocLocalBuffer(size, usage | usage_flags)!;
+    self.copyBuffer(&ret, &staging)!;
+    staging.destroy(self.device);
     return ret;
 }
 
-fn DataBuffer? VulkanContext.createHostVisibleBuffer(&this, void* data, usz size, vk::BufferUsageFlags usage = { .transfer_src }) {
-    DataBuffer ret = this.mallocHostVisibleBuffer(size, usage)!;
-    this.writeBuffer(&ret, data);
+fn DataBuffer? VulkanContext.createHostVisibleBuffer(&self, void* data, usz size, vk::BufferUsageFlags usage = { .transfer_src }) {
+    DataBuffer ret = self.mallocHostVisibleBuffer(size, usage)!;
+    self.writeBuffer(&ret, data);
     return ret;
 }
 
-fn ImageBuffer? VulkanContext.createImageBuffer(&this, void* data, vk::Format format, uint width, uint height, uint channel) {
+fn ImageBuffer? VulkanContext.createImageBuffer(&self, void* data, vk::Format format, uint width, uint height, uint channel) {
     usz size = (usz)width * (usz)height * (usz)channel;
-    DataBuffer staging = this.createHostVisibleBuffer(data, size)!;
-    ImageBuffer ret = this.mallocImageBuffer(format, width, height)!;
-    this.copyImage(&ret, &staging)!;
-    staging.destroy(this.device);
-    ret.view = createImageView(this.device, ret.image, format)!;
+    DataBuffer staging = self.createHostVisibleBuffer(data, size)!;
+    ImageBuffer ret = self.mallocImageBuffer(format, width, height)!;
+    self.copyImage(&ret, &staging)!;
+    staging.destroy(self.device);
+    ret.view = createImageView(self.device, ret.image, format)!;
     return ret;
 }
 
-fn void VulkanContext.writeBuffer(&this, DataBuffer* buffer, void* data) {
+fn void VulkanContext.writeBuffer(&self, DataBuffer* buffer, void* data) {
     if (buffer.mapped) {
         mem::copy(buffer.mapped, data, buffer.size);
     }
 }
 
-fn void? VulkanContext.copyBuffer(&this, DataBuffer* dst, DataBuffer* src) {
-    vk::CommandBuffer command_buffer = this.beginSingleTimeCommand()!;
+fn void? VulkanContext.copyBuffer(&self, DataBuffer* dst, DataBuffer* src) {
+    vk::CommandBuffer command_buffer = self.beginSingleTimeCommand()!;
     vk::BufferCopy copy_region = {
         .size = (vk::DeviceSize)src.size,
     };
     vk::cmdCopyBuffer(command_buffer, src.buffer, dst.buffer, 1, &copy_region);
-    this.endSingleTimeCommand(command_buffer)!;
+    self.endSingleTimeCommand(command_buffer)!;
 }
 
-// this procedure is assuming input image is uninitialized
-fn void? VulkanContext.copyImage(&this, ImageBuffer* dst, DataBuffer* src) {
-    this.transitionImageLayout(dst.image, dst.format, vk::IMAGE_LAYOUT_UNDEFINED, vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)!;
-    vk::CommandBuffer command_buffer = this.beginSingleTimeCommand()!;
+// self procedure is assuming input image is uninitialized
+fn void? VulkanContext.copyImage(&self, ImageBuffer* dst, DataBuffer* src) {
+    self.transitionImageLayout(dst.image, dst.format, vk::IMAGE_LAYOUT_UNDEFINED, vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)!;
+    vk::CommandBuffer command_buffer = self.beginSingleTimeCommand()!;
     vk::BufferImageCopy copy_region = {
         .image_subresource = {
             .aspect_mask = { .color },
@@ -496,12 +496,12 @@ fn void? VulkanContext.copyImage(&this, ImageBuffer* dst, DataBuffer* src) {
         },
     };
     vk::cmdCopyBufferToImage(command_buffer, src.buffer, dst.image, vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
-    this.endSingleTimeCommand(command_buffer)!;
-    this.transitionImageLayout(dst.image, dst.format, vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)!;
+    self.endSingleTimeCommand(command_buffer)!;
+    self.transitionImageLayout(dst.image, dst.format, vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)!;
 }
 
-fn uint? VulkanContext.findMemoryType(&this, uint filter, vk::MemoryPropertyFlags flags) {
-    vk::PhysicalDeviceMemoryProperties props = vk::getPhysicalDeviceMemoryProperties(this.physical_device);
+fn uint? VulkanContext.findMemoryType(&self, uint filter, vk::MemoryPropertyFlags flags) {
+    vk::PhysicalDeviceMemoryProperties props = vk::getPhysicalDeviceMemoryProperties(self.physical_device);
     for (uint i = 0; i < props.memory_type_count; i++) {
         if (filter & (1 << i) == 0) {
             continue;
@@ -514,32 +514,32 @@ fn uint? VulkanContext.findMemoryType(&this, uint filter, vk::MemoryPropertyFlag
     return vk::error::ERROR_UNKNOWN?;
 }
 
-fn vk::DeviceMemory? VulkanContext.allocateMemory(&this, vk::MemoryRequirements req, vk::MemoryPropertyFlags properties = { .device_local }) {
+fn vk::DeviceMemory? VulkanContext.allocateMemory(&self, vk::MemoryRequirements req, vk::MemoryPropertyFlags properties = { .device_local }) {
     vk::MemoryAllocateInfo info = {
         .s_type = vk::STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocation_size = req.size,
-        .memory_type_index = this.findMemoryType(req.memory_type_bits, properties)!,
+        .memory_type_index = self.findMemoryType(req.memory_type_bits, properties)!,
     };
-    return vk::allocateMemory(this.device, &info)!;
+    return vk::allocateMemory(self.device, &info)!;
 }
 
-fn void ImageBuffer.destroy(&this, vk::Device device) {
-    vk::destroyImageView(device, this.view);
-    vk::destroyImage(device, this.image);
-    vk::freeMemory(device, this.memory);
+fn void ImageBuffer.destroy(&self, vk::Device device) {
+    vk::destroyImageView(device, self.view);
+    vk::destroyImage(device, self.image);
+    vk::freeMemory(device, self.memory);
 }
 
-fn void DataBuffer.destroy(&this, vk::Device device) {
-    if (this.mapped) {
-        vk::unmapMemory(device, this.memory);
+fn void DataBuffer.destroy(&self, vk::Device device) {
+    if (self.mapped) {
+        vk::unmapMemory(device, self.memory);
     }
-    vk::destroyBuffer(device, this.buffer);
-    vk::freeMemory(device, this.memory);
+    vk::destroyBuffer(device, self.buffer);
+    vk::freeMemory(device, self.memory);
 }
 
-// this procedure is assuming image only live in fragment shader
-fn void? VulkanContext.transitionImageLayout(&this, vk::Image image, vk::Format format, vk::ImageLayout old, vk::ImageLayout new) {
-    vk::CommandBuffer command_buffer = this.beginSingleTimeCommand()!;
+// self procedure is assuming image only live in fragment shader
+fn void? VulkanContext.transitionImageLayout(&self, vk::Image image, vk::Format format, vk::ImageLayout old, vk::ImageLayout new) {
+    vk::CommandBuffer command_buffer = self.beginSingleTimeCommand()!;
     vk::PipelineStageFlags src_stage;
     vk::PipelineStageFlags dst_stage;
     vk::ImageMemoryBarrier barrier = {
@@ -574,5 +574,5 @@ fn void? VulkanContext.transitionImageLayout(&this, vk::Image image, vk::Format 
         0, null,
         0, null,
         1, &barrier);
-    this.endSingleTimeCommand(command_buffer)!;
+    self.endSingleTimeCommand(command_buffer)!;
 }

@@ -22,81 +22,81 @@ struct Engine {
     Time start_timestamp;
 }
 
-fn void? Engine.init(&this, uint width, uint height, ZString title) {
+fn void? Engine.init(&self, uint width, uint height, ZString title) {
     io::printfn("GLFW %s",glfw::getVersionString());
     glfw::setErrorCallback(fn void(int error, ZString description) => io::printfn("GLFW error(%x): %s", error, description));
     if (!glfw::init()) {
         return vk::error::NOT_READY?;
     }
     glfw::windowHint(glfw::CLIENT_API, glfw::NO_API);
-    this.window = glfw::createWindow(width, height, title, null, null);
-    if (this.window == null) {
+    self.window = glfw::createWindow(width, height, title, null, null);
+    if (self.window == null) {
         return vk::error::NOT_READY?;
     }
-    io::printfn("Window created %x", this.window);
-    this.start_timestamp = time::now();
-    this.last_frame_timestamp = time::now();
-    this.last_update_timestamp = time::now();
-    this.context.init(this.window)!;
-    this.resource.init();
-    this.buildScene()!;
-    this.buildRenderer()!;
-    this.scene.camera.aspect_ratio = (float)this.renderer.extent.width / (float)this.renderer.extent.height;
+    io::printfn("Window created %x", self.window);
+    self.start_timestamp = time::now();
+    self.last_frame_timestamp = time::now();
+    self.last_update_timestamp = time::now();
+    self.context.init(self.window)!;
+    self.resource.init();
+    self.buildScene()!;
+    self.buildRenderer()!;
+    self.scene.camera.aspect_ratio = (float)self.renderer.extent.width / (float)self.renderer.extent.height;
     io::printfn("Engine initialized");
 }
 
-fn void? Engine.buildScene(&this) {
-    this.scene.init(this.context.device)!;
-    this.scene.root = this.resource.createNode(NodeType.ROOT);
+fn void? Engine.buildScene(&self) {
+    self.scene.init(self.context.device)!;
+    self.scene.root = self.resource.createNode(NodeType.ROOT);
 }
 
-fn void? Engine.buildRenderer(&this) {
-    QueueFamilyIndices indices = this.context.findQueueFamilies(this.context.physical_device)!;
-    SwapchainSupport support= this.context.querySwapchainSupport(this.context.physical_device)!;
-    this.renderer.buildSwapchain(this.context.device, this.context.surface, support.capabilities, support.formats, support.present_modes, indices.graphics_family, indices.present_family)!;
-    this.renderer.buildCommandBuffers(this.context.device, this.context.command_pool)!;
-    this.renderer.buildSynchronizers(this.context.device)!;
+fn void? Engine.buildRenderer(&self) {
+    QueueFamilyIndices indices = self.context.findQueueFamilies(self.context.physical_device)!;
+    SwapchainSupport support= self.context.querySwapchainSupport(self.context.physical_device)!;
+    self.renderer.buildSwapchain(self.context.device, self.context.surface, support.capabilities, support.formats, support.present_modes, indices.graphics_family, indices.present_family)!;
+    self.renderer.buildCommandBuffers(self.context.device, self.context.command_pool)!;
+    self.renderer.buildSynchronizers(self.context.device)!;
     for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        this.renderer.frames[i].uniform =  this.context.mallocHostVisibleBuffer(SceneUniform.sizeof, { .uniform_buffer })!;
+        self.renderer.frames[i].uniform =  self.context.mallocHostVisibleBuffer(SceneUniform.sizeof, { .uniform_buffer })!;
         vk::DescriptorSetAllocateInfo alloc_info = {
     		.s_type              = vk::STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-    		.descriptor_pool     = this.context.descriptor_pool,
+    		.descriptor_pool     = self.context.descriptor_pool,
     		.descriptor_set_count = 1,
-    		.p_set_layouts        = &this.scene.descriptor_set_layout,
+    		.p_set_layouts        = &self.scene.descriptor_set_layout,
     	};
-        io::printfn("creating descriptor set for frame %d with pool %x and set layout %x", i, this.context.descriptor_pool, this.scene.descriptor_set_layout);
-    	vk::allocateDescriptorSets(this.context.device, &alloc_info, &this.renderer.frames[i].descriptor_set)!;
+        io::printfn("creating descriptor set for frame %d with pool %x and set layout %x", i, self.context.descriptor_pool, self.scene.descriptor_set_layout);
+    	vk::allocateDescriptorSets(self.context.device, &alloc_info, &self.renderer.frames[i].descriptor_set)!;
         io::printfn("created descriptor set");
         vk::DescriptorBufferInfo uniform_info = {
-            .buffer = this.renderer.frames[i].uniform.buffer,
+            .buffer = self.renderer.frames[i].uniform.buffer,
             .offset = 0,
             .range = SceneUniform.sizeof
         };
         vk::WriteDescriptorSet[*] writes = {{
             .s_type = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dst_set = this.renderer.frames[i].descriptor_set,
+            .dst_set = self.renderer.frames[i].descriptor_set,
             .dst_binding = 0,
             .descriptor_type = vk::DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptor_count = 1,
             .p_buffer_info = &uniform_info
         }};
-        vk::updateDescriptorSets(this.context.device, writes.len, &writes);
+        vk::updateDescriptorSets(self.context.device, writes.len, &writes);
     }
-    this.renderer.depth_buffer = this.context.createDepthImage(vk::FORMAT_D32_SFLOAT, this.renderer.extent.width, this.renderer.extent.height)!;
+    self.renderer.depth_buffer = self.context.createDepthImage(vk::FORMAT_D32_SFLOAT, self.renderer.extent.width, self.renderer.extent.height)!;
 }
 
-fn void Engine.pushSceneUniform(&this) {
+fn void Engine.pushSceneUniform(&self) {
     SceneUniform data = {
-        .view = this.scene.viewMatrix(),
-        .projection = this.scene.projectionMatrix(),
-        .time = (float)time::now().diff_sec(this.start_timestamp),
+        .view = self.scene.viewMatrix(),
+        .projection = self.scene.projectionMatrix(),
+        .time = (float)time::now().diff_sec(self.start_timestamp),
     };
-    this.context.writeBuffer(this.renderer.getUniform(), &data);
+    self.context.writeBuffer(self.renderer.getUniform(), &data);
 }
-fn void? Engine.tryRender(&this) {
-    uint image_idx = this.renderer.begin(this.context.device)!;
-    this.pushSceneUniform();
-    vk::CommandBuffer command_buffer = this.renderer.getCommandBuffer();
+fn void? Engine.tryRender(&self) {
+    uint image_idx = self.renderer.begin(self.context.device)!;
+    self.pushSceneUniform();
+    vk::CommandBuffer command_buffer = self.renderer.getCommandBuffer();
     List{NodeHandle} node_stack;
     List{Matrix4f} transform_stack;
     node_stack.tinit();
@@ -105,31 +105,31 @@ fn void? Engine.tryRender(&this) {
         node_stack.free();
         transform_stack.free();
     }
-    foreach (node : this.resource.nodes[this.scene.root].children) {
+    foreach (node : self.resource.nodes[self.scene.root].children) {
         node_stack.push(node);
         transform_stack.push(MATRIX4F_IDENTITY);
     }
     while (!node_stack.is_empty()) {
         NodeHandle handle = node_stack.pop()!;
-        Node* node = this.resource.getNode(handle);
+        Node* node = self.resource.getNode(handle);
         Matrix4f local_matrix = node.transform.toMatrix();
         Matrix4f world_matrix = transform_stack.pop()!.mul(local_matrix);
         switch (node.type) {
             case NodeType.GROUP:
                 break;
             case NodeType.SKELETAL_MESH:
-                SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
-                SkinnedMaterial* material = this.resource.getSkinnedMaterial(mesh.material);
+                SkeletalMesh* mesh = self.resource.getSkeletalMesh(node.skeletal_mesh);
+                SkinnedMaterial* material = self.resource.getSkinnedMaterial(mesh.material);
                 // Update bone matrices
                 Matrix4f* bones = (Matrix4f*)mesh.bone_buffer.mapped;
                 for (uint i = 0; i < mesh.bones.len; i++) {
-                    Node* bone_node = this.resource.getNode(mesh.bones[i]);
+                    Node* bone_node = self.resource.getNode(mesh.bones[i]);
                     bones[i] = bone_node.transform.toMatrix();
                 }
-                material.updateBoneBuffer(this.context.device, mesh.bone_buffer.buffer, (vk::DeviceSize)mesh.bone_buffer.size);
+                material.updateBoneBuffer(self.context.device, mesh.bone_buffer.buffer, (vk::DeviceSize)mesh.bone_buffer.size);
                 vk::cmdBindPipeline(command_buffer, vk::PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
                 vk::DescriptorSet[*] sets = {
-                    this.renderer.getDescriptorSet(),
+                    self.renderer.getDescriptorSet(),
                     material.descriptor_set
                 };
                 vk::cmdBindDescriptorSets(
@@ -156,12 +156,12 @@ fn void? Engine.tryRender(&this) {
                 vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
                 break;
             case NodeType.STATIC_MESH:
-                StaticMesh* mesh = this.resource.getMesh(node.mesh);
-                Material* material = this.resource.getMaterial(mesh.material);
+                StaticMesh* mesh = self.resource.getMesh(node.mesh);
+                Material* material = self.resource.getMaterial(mesh.material);
                 // io::printfn("drawing mesh %x, material %x", mesh, material);
                 vk::cmdBindPipeline(command_buffer, vk::PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
                 vk::DescriptorSet[*] descriptor_sets = {
-                    this.renderer.getDescriptorSet(),
+                    self.renderer.getDescriptorSet(),
                     material.descriptor_set,
                 };
                 vk::cmdBindDescriptorSets(
@@ -188,7 +188,7 @@ fn void? Engine.tryRender(&this) {
                 vk::cmdDrawIndexed(command_buffer, mesh.indices.len);
                 break;
             default:
-                io::printfn("this.resource.nodes[this.scene.root].children = %d", this.resource.nodes[this.scene.root].children.len());
+                io::printfn("self.resource.nodes[self.scene.root].children = %d", self.resource.nodes[self.scene.root].children.len());
                 io::printfn("Unknown node type %d, handle = %d - %d", node.type.ordinal, handle.index, handle.generation);
                 // libc::exit(1);
                 break;
@@ -203,59 +203,59 @@ fn void? Engine.tryRender(&this) {
             transform_stack.push(world_matrix);
         }
     }
-    this.renderer.end(image_idx, this.context.graphics_queue, this.context.present_queue)!;
+    self.renderer.end(image_idx, self.context.graphics_queue, self.context.present_queue)!;
 }
 
-fn void Engine.render(&this) {
-    if (time::now().diff_sec(this.last_frame_timestamp) < FRAME_TIME) {
+fn void Engine.render(&self) {
+    if (time::now().diff_sec(self.last_frame_timestamp) < FRAME_TIME) {
         return;
     }
-    fault excuse = @catch(this.tryRender());
+    fault excuse = @catch(self.tryRender());
     if (excuse == vk::error::ERROR_OUT_OF_DATE_KHR || excuse == vk::error::SUBOPTIMAL_KHR) {
-        excuse = @catch(this.recreateSwapchain());
+        excuse = @catch(self.recreateSwapchain());
         if (excuse) {
             io::printfn("Something went wrong while recreating swapchain!");
         }
     } else if (excuse) {
         io::printfn("Something went wrong while rendering!");
     }
-    this.last_frame_timestamp = time::now();
+    self.last_frame_timestamp = time::now();
 }
 
-fn void? Engine.recreateSwapchain(&this) {
-    SwapchainSupport support = this.context.querySwapchainSupport(this.context.physical_device)!;
-    QueueFamilyIndices indices = this.context.findQueueFamilies(this.context.physical_device)!;
-    vk::deviceWaitIdle(this.context.device)!;
-    this.renderer.destroySwapchain(this.context.device);
-    this.renderer.buildSwapchain(this.context.device, this.context.surface, support.capabilities, support.formats, support.present_modes, indices.graphics_family, indices.present_family)!;
+fn void? Engine.recreateSwapchain(&self) {
+    SwapchainSupport support = self.context.querySwapchainSupport(self.context.physical_device)!;
+    QueueFamilyIndices indices = self.context.findQueueFamilies(self.context.physical_device)!;
+    vk::deviceWaitIdle(self.context.device)!;
+    self.renderer.destroySwapchain(self.context.device);
+    self.renderer.buildSwapchain(self.context.device, self.context.surface, support.capabilities, support.formats, support.present_modes, indices.graphics_family, indices.present_family)!;
 }
 
-fn float Engine.getDeltaTime(&this) {
-    return (float)time::now().diff_sec(this.last_update_timestamp);
+fn float Engine.getDeltaTime(&self) {
+    return (float)time::now().diff_sec(self.last_update_timestamp);
 }
 
-fn float Engine.getTime(&this) {
-    return (float)time::now().diff_sec(this.start_timestamp);
+fn float Engine.getTime(&self) {
+    return (float)time::now().diff_sec(self.start_timestamp);
 }
 
-fn bool Engine.shouldClose(&this) {
-    return glfw::windowShouldClose(this.window) != 0;
+fn bool Engine.shouldClose(&self) {
+    return glfw::windowShouldClose(self.window) != 0;
 }
 
-fn bool Engine.update(&this) {
+fn bool Engine.update(&self) {
     glfw::pollEvents();
-    float delta_time = this.getDeltaTime();
+    float delta_time = self.getDeltaTime();
     if (delta_time < UPDATE_FRAME_TIME) {
         return false;
     }
-    foreach (&entry : this.resource.nodes.entries) {
+    foreach (&entry : self.resource.nodes.entries) {
         if (!entry.active) continue;
         Node* node = &entry.item;
         if (node.type != NodeType.SKELETAL_MESH) continue;
         if (node.animation.status != AnimationStatus.PLAYING) continue;
         AnimationInstance* anim = &node.animation;
         anim.time += delta_time;
-        SkeletalMesh* mesh = this.resource.getSkeletalMesh(node.skeletal_mesh);
+        SkeletalMesh* mesh = self.resource.getSkeletalMesh(node.skeletal_mesh);
         if (!mesh) continue;
         AnimationTrack? track = mesh.animations[anim.name];
         if (catch excuse = track) {
@@ -276,18 +276,18 @@ fn bool Engine.update(&this) {
                 break;
             default: break;
         }
-        track.update(anim.time, &this.resource.nodes, mesh.bones);
+        track.update(anim.time, &self.resource.nodes, mesh.bones);
     }
-    this.last_update_timestamp = time::now();
+    self.last_update_timestamp = time::now();
     return true;
 }
 
-fn void? Engine.destroy(&this) {
-    vk::deviceWaitIdle(this.context.device)!;
-    this.resource.destroy(this.context.device);
-    this.renderer.destroy(this.context.device, this.context.command_pool);
-    this.scene.destroy(this.context.device);
-    this.context.destroy()!;
-    glfw::destroyWindow(this.window);
+fn void? Engine.destroy(&self) {
+    vk::deviceWaitIdle(self.context.device)!;
+    self.resource.destroy(self.context.device);
+    self.renderer.destroy(self.context.device, self.context.command_pool);
+    self.scene.destroy(self.context.device);
+    self.context.destroy()!;
+    glfw::destroyWindow(self.window);
     glfw::terminate();
 }

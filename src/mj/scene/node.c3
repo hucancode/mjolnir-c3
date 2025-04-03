@@ -38,27 +38,27 @@ struct Node {
     Transform transform;
 }
 
-fn void Node.init(&this) {
-    this.children.init(allocator::heap());
-    this.transform.scale = {1.0, 1.0, 1.0};
+fn void Node.init(&self) {
+    self.children.init(allocator::heap());
+    self.transform.scale = {1.0, 1.0, 1.0};
 }
 
-fn void Node.destroy(&this) {
-    this.children.free();
+fn void Node.destroy(&self) {
+    self.children.free();
 }
 
-fn Matrix4f Transform.toMatrix(&this) {
-    return this.rotation.to_matrixf()
-        .translate(this.position)
-        .scale(this.scale);
+fn Matrix4f Transform.toMatrix(&self) {
+    return self.rotation.to_matrixf()
+        .translate(self.position)
+        .scale(self.scale);
 }
 
-fn void NodePool.unparent(&this, NodeHandle node) {
-    Node* n = this.get(node);
+fn void NodePool.unparent(&self, NodeHandle node) {
+    Node* n = self.get(node);
     if (n == null) {
         return;
     }
-    Node* p = this.get(n.parent);
+    Node* p = self.get(n.parent);
     if (p != null && p != n) {
         if (try i = p.children.index_of(node)) {
             if(try last = p.children.pop()) {
@@ -71,10 +71,10 @@ fn void NodePool.unparent(&this, NodeHandle node) {
     n.parent = node;
 }
 
-fn void NodePool.parent(&this, NodeHandle parent, NodeHandle child) {
-    this.unparent(child);
-    Node* p = this.get(parent);
-    Node* c = this.get(child);
+fn void NodePool.parent(&self, NodeHandle parent, NodeHandle child) {
+    self.unparent(child);
+    Node* p = self.get(parent);
+    Node* c = self.get(child);
     io::printfn("Parenting node %x type %d to %x type %d", c, c.type.ordinal, p, p.type.ordinal);
     if (p == null || c == null) {
         return;
@@ -84,10 +84,10 @@ fn void NodePool.parent(&this, NodeHandle parent, NodeHandle child) {
     p.children.push(child);
 }
 
-fn void Engine.parentNode(&this, NodeHandle parent, NodeHandle child) {
-    this.resource.nodes.parent(parent, child);
+fn void Engine.parentNode(&self, NodeHandle parent, NodeHandle child) {
+    self.resource.nodes.parent(parent, child);
 }
 
-fn void Engine.addToRoot(&this, NodeHandle node) {
-    this.parentNode(this.scene.root, node);
+fn void Engine.addToRoot(&self, NodeHandle node) {
+    self.parentNode(self.scene.root, node);
 }

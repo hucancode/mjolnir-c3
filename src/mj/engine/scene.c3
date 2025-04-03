@@ -8,8 +8,8 @@ struct Scene {
     vk::DescriptorSetLayout descriptor_set_layout;
 }
 
-fn void? Scene.init(&this, vk::Device device) {
-    this.camera = {
+fn void? Scene.init(&self, vk::Device device) {
+    self.camera = {
         .projection = CameraProjection.PERSPECTIVE,
         .fov = 45.0,
         .aspect_ratio = 16.0 / 9.0,
@@ -43,17 +43,17 @@ fn void? Scene.init(&this, vk::Device device) {
   		.binding_count = bindings.len,
   		.p_bindings    = &bindings,
    	};
-   	this.descriptor_set_layout = vk::createDescriptorSetLayout(device, &info)!;
+   	self.descriptor_set_layout = vk::createDescriptorSetLayout(device, &info)!;
 }
 
-fn void Scene.destroy(&this, vk::Device device) {
-    vk::destroyDescriptorSetLayout(device, this.descriptor_set_layout);
+fn void Scene.destroy(&self, vk::Device device) {
+    vk::destroyDescriptorSetLayout(device, self.descriptor_set_layout);
 }
 
-fn Matrix4f Scene.viewMatrix(&this) @inline {
-    return this.camera.calculateLookatMatrix();
+fn Matrix4f Scene.viewMatrix(&self) @inline {
+    return self.camera.calculateLookatMatrix();
 }
 
-fn Matrix4f Scene.projectionMatrix(&this) @inline {
-    return this.camera.calculateProjectionMatrix();
+fn Matrix4f Scene.projectionMatrix(&self) @inline {
+    return self.camera.calculateProjectionMatrix();
 }

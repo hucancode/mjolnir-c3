@@ -42,23 +42,23 @@ struct SkeletalMesh {
     SkinnedMaterialHandle material;
 }
 
-fn void? Engine.buildSkeletalMesh(&this, SkeletalMesh* mesh, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
+fn void? Engine.buildSkeletalMesh(&self, SkeletalMesh* mesh, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
     mesh.material = material;
     mesh.vertices = vertices;
     mesh.indices = indices;
     mesh.bones = bones;
     mesh.animations.tinit();
-    mesh.vertex_buffer = this.context.createLocalBuffer(mesh.vertices, SkinnedVertex.sizeof * mesh.vertices.len, { .vertex_buffer })!;
-    mesh.index_buffer = this.context.createLocalBuffer(mesh.indices, uint.sizeof * mesh.indices.len, { .index_buffer })!;
+    mesh.vertex_buffer = self.context.createLocalBuffer(mesh.vertices, SkinnedVertex.sizeof * mesh.vertices.len, { .vertex_buffer })!;
+    mesh.index_buffer = self.context.createLocalBuffer(mesh.indices, uint.sizeof * mesh.indices.len, { .index_buffer })!;
 
     // Create storage for bone matrices if needed
     if (bones.len > 0) {
         usz bone_buffer_size = bones.len * Matrix4f.sizeof;
-        mesh.bone_buffer = this.context.mallocHostVisibleBuffer(bone_buffer_size, { .storage_buffer, .transfer_dst })!;
+        mesh.bone_buffer = self.context.mallocHostVisibleBuffer(bone_buffer_size, { .storage_buffer, .transfer_dst })!;
     }
 }
 
-fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHandle material, uint segments = 2, float[<4>] color = {0.125, 0.25, 0.5, 1.0}) {
+fn void? Engine.buildSegmentedCube(&self, SkeletalMesh* mesh, SkinnedMaterialHandle material, uint segments = 2, float[<4>] color = {0.125, 0.25, 0.5, 1.0}) {
     if (segments < 2) segments = 2;
 
     // Create bones
@@ -66,8 +66,8 @@ fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
     NodeHandle* bones = buf[:segments];
     defer free(bones);
     for (uint i = 0; i < segments; i++) {
-        bones[i] = this.resource.createNode(NodeType.BONE);
-        Node* node = this.resource.getNode(bones[i]);
+        bones[i] = self.resource.createNode(NodeType.BONE);
+        Node* node = self.resource.getNode(bones[i]);
         node.transform.position = {0.0f, (float)i * 2.0f / segments - 1.0f, 0.0f};
     }
 
@@ -92,7 +92,7 @@ fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
         float y_bottom = -1.0f + s * segment_height;
         float y_top = y_bottom + segment_height;
 
-        // Calculate which bones influence this segment and by how much
+        // Calculate which bones influence self segment and by how much
         uint primary_bone = s;
         uint secondary_bone = s < segments - 1 ? s + 1 : s;
         float primary_weight = 1.0f;
@@ -105,7 +105,7 @@ fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
             primary_weight = 0.7f;
         }
 
-        // Vertices for this segment
+        // Vertices for self segment
         // Bottom face
         vertices[vertex_idx++] = {
             .position = {-1.0f, y_bottom, -1.0f},
@@ -180,7 +180,7 @@ fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
             .weights = {primary_weight, secondary_weight, 0.0f, 0.0f}
         };
 
-        // Indices for this segment
+        // Indices for self segment
         uint base = s * 8;
 
         // Bottom face
@@ -232,7 +232,7 @@ fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
         indices[index_idx++] = base + 5;
     }
 
-    this.buildSkeletalMesh(mesh, vertices[:vertex_idx], indices[:index_idx], bones[:segments], material)!;
+    self.buildSkeletalMesh(mesh, vertices[:vertex_idx], indices[:index_idx], bones[:segments], material)!;
 
     // Create a simple animation for the bones
     Animation* animation_track = (Animation*)malloc(segments * Animation.sizeof);
@@ -264,29 +264,29 @@ fn void? Engine.buildSegmentedCube(&this, SkeletalMesh* mesh, SkinnedMaterialHan
     };
 }
 
-fn void SkeletalMesh.destroy(&this, vk::Device device) {
-    this.vertex_buffer.destroy(device);
-    this.index_buffer.destroy(device);
-    if (this.bones.len > 0) {
-        this.bone_buffer.destroy(device);
+fn void SkeletalMesh.destroy(&self, vk::Device device) {
+    self.vertex_buffer.destroy(device);
+    self.index_buffer.destroy(device);
+    if (self.bones.len > 0) {
+        self.bone_buffer.destroy(device);
     }
-    foreach(track : this.animations.tvalues()) {
+    foreach(track : self.animations.tvalues()) {
         track.destroy();
     };
-    this.animations.free();
-    free(this.vertices);
-    free(this.indices);
-    free(this.bones);
+    self.animations.free();
+    free(self.vertices);
+    free(self.indices);
+    free(self.bones);
 }
 
-fn SkeletalMeshHandle? Engine.createSkeletalMesh(&this, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
-    SkeletalMeshHandle ret = this.resource.mallocSkeletalMesh();
-    this.buildSkeletalMesh(this.resource.getSkeletalMesh(ret), vertices, indices, bones, material)!;
+fn SkeletalMeshHandle? Engine.createSkeletalMesh(&self, SkinnedVertex[] vertices, uint[] indices, NodeHandle[] bones, SkinnedMaterialHandle material) {
+    SkeletalMeshHandle ret = self.resource.mallocSkeletalMesh();
+    self.buildSkeletalMesh(self.resource.getSkeletalMesh(ret), vertices, indices, bones, material)!;
     return ret;
 }
 
-fn SkeletalMeshHandle? Engine.createSegmentedCube(&this, SkinnedMaterialHandle material, uint segments = 2) {
-    SkeletalMeshHandle ret = this.resource.mallocSkeletalMesh();
-    this.buildSegmentedCube(this.resource.getSkeletalMesh(ret), material, segments)!;
+fn SkeletalMeshHandle? Engine.createSegmentedCube(&self, SkinnedMaterialHandle material, uint segments = 2) {
+    SkeletalMeshHandle ret = self.resource.mallocSkeletalMesh();
+    self.buildSegmentedCube(self.resource.getSkeletalMesh(ret), material, segments)!;
     return ret;
 }

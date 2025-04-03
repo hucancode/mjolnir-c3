@@ -14,7 +14,7 @@ struct Material {
     vk::DescriptorSet descriptor_set;
 }
 
-fn void? Material.initDescriptorSet(&this, vk::Device device, vk::DescriptorPool pool) {
+fn void? Material.initDescriptorSet(&self, vk::Device device, vk::DescriptorPool pool) {
     vk::DescriptorSetLayoutBinding albedo = {
         .binding            = 0,
         .descriptor_type    = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -39,17 +39,17 @@ fn void? Material.initDescriptorSet(&this, vk::Device device, vk::DescriptorPool
         .binding_count = bindings.len,
         .p_bindings    = &bindings,
     };
-    this.descriptor_set_layout = vk::createDescriptorSetLayout(device, &info)!;
+    self.descriptor_set_layout = vk::createDescriptorSetLayout(device, &info)!;
 	vk::DescriptorSetAllocateInfo alloc_info = {
 		.s_type               = vk::STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		.descriptor_pool      = pool,
 		.descriptor_set_count = 1,
-		.p_set_layouts        = &this.descriptor_set_layout,
+		.p_set_layouts        = &self.descriptor_set_layout,
 	};
-	vk::allocateDescriptorSets(device, &alloc_info, &this.descriptor_set)!;
+	vk::allocateDescriptorSets(device, &alloc_info, &self.descriptor_set)!;
 }
 
-fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Texture* metalic, Texture* roughness) {
+fn void Material.updateTextures(&self, vk::Device device, Texture* albedo, Texture* metalic, Texture* roughness) {
     vk::DescriptorImageInfo[*] image_infos = {{
         .sampler        = albedo.sampler,
         .image_view     = albedo.buffer.view,
@@ -65,21 +65,21 @@ fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Textu
     }};
     vk::WriteDescriptorSet[*] writes = {{
         .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dst_set          = this.descriptor_set,
+        .dst_set          = self.descriptor_set,
         .dst_binding      = 0,
         .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptor_count = 1,
         .p_image_info     = &image_infos[0],
     }, {
         .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dst_set          = this.descriptor_set,
+        .dst_set          = self.descriptor_set,
         .dst_binding      = 1,
         .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptor_count = 1,
         .p_image_info     = &image_infos[1],
     }, {
         .s_type           = vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dst_set          = this.descriptor_set,
+        .dst_set          = self.descriptor_set,
         .dst_binding      = 2,
         .descriptor_type  = vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptor_count = 1,
@@ -88,17 +88,17 @@ fn void Material.updateTextures(&this, vk::Device device, Texture* albedo, Textu
 	vk::updateDescriptorSets(device, writes.len, &writes);
 }
 
-fn void Material.destroy(&this, vk::Device device) {
-    vk::destroyPipeline(device, this.pipeline);
-    vk::destroyPipelineLayout(device, this.pipeline_layout);
-    vk::destroyDescriptorSetLayout(device, this.descriptor_set_layout);
+fn void Material.destroy(&self, vk::Device device) {
+    vk::destroyPipeline(device, self.pipeline);
+    vk::destroyPipelineLayout(device, self.pipeline_layout);
+    vk::destroyDescriptorSetLayout(device, self.descriptor_set_layout);
 }
 
-fn void? Engine.buildMaterial(&this, Material* mat) {
-    vk::ShaderModule v = this.context.createShaderModule(mat.vertex_code)!;
-    defer vk::destroyShaderModule(this.context.device, v);
-    vk::ShaderModule f = this.context.createShaderModule(mat.fragment_code)!;
-    defer vk::destroyShaderModule(this.context.device, f);
+fn void? Engine.buildMaterial(&self, Material* mat) {
+    vk::ShaderModule v = self.context.createShaderModule(mat.vertex_code)!;
+    defer vk::destroyShaderModule(self.context.device, v);
+    vk::ShaderModule f = self.context.createShaderModule(mat.fragment_code)!;
+    defer vk::destroyShaderModule(self.context.device, f);
     vk::PipelineShaderStageCreateInfo[*] shader_stages = {{
         .s_type     = vk::STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .stage      = { .vertex },
@@ -156,7 +156,7 @@ fn void? Engine.buildMaterial(&this, Material* mat) {
         .p_attachments    = &colorBlendAttachment,
     };
     vk::DescriptorSetLayout[*] set_layouts = {
-        this.scene.descriptor_set_layout,
+        self.scene.descriptor_set_layout,
         mat.descriptor_set_layout,
     };
     vk::PushConstantRange push_constant = {
@@ -171,12 +171,12 @@ fn void? Engine.buildMaterial(&this, Material* mat) {
         .push_constant_range_count    = 1,
         .p_push_constant_ranges       = &push_constant
     };
-    mat.pipeline_layout = vk::createPipelineLayout(this.context.device, &layout_info)!;
+    mat.pipeline_layout = vk::createPipelineLayout(self.context.device, &layout_info)!;
     io::printfn("Material pipeline layout created");
     vk::PipelineRenderingCreateInfoKHR rendering_info = {
         .s_type                           = vk::STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .color_attachment_count           = 1,
-        .p_color_attachment_formats       = &this.renderer.format.format,
+        .p_color_attachment_formats       = &self.renderer.format.format,
         .depth_attachment_format          = vk::FORMAT_D32_SFLOAT,
     };
     vk::PipelineDepthStencilStateCreateInfo depth_stencil = {
@@ -204,22 +204,22 @@ fn void? Engine.buildMaterial(&this, Material* mat) {
         .p_next                 = &rendering_info,
     };
     mat.pipeline = vk::createGraphicsPipelines(
-        this.context.device,
+        self.context.device,
         (vk::PipelineCache)0,
         1,
         &pipelineInfo)!;
     io::printfn("Material pipeline created");
 }
 
-fn MaterialHandle? Engine.createMaterial(&this) {
-    MaterialHandle ret = this.resource.materials.malloc();
-    Material* mat = this.resource.materials[ret];
+fn MaterialHandle? Engine.createMaterial(&self) {
+    MaterialHandle ret = self.resource.materials.malloc();
+    Material* mat = self.resource.materials[ret];
     io::printfn("Material allocated");
     mat.vertex_code = $embed("shaders/pbr.vert.spv");
     mat.fragment_code = $embed("shaders/pbr.frag.spv");
-    mat.initDescriptorSet(this.context.device, this.context.descriptor_pool)!;
+    mat.initDescriptorSet(self.context.device, self.context.descriptor_pool)!;
     io::printfn("Material descriptor set initialized");
-    this.buildMaterial(mat)!;
+    self.buildMaterial(mat)!;
     io::printfn("Material created");
     return ret;
 }

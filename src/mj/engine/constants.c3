@@ -49,12 +49,12 @@ const Vec3f VEC_X_NEG = VEC_LEFT;
 const Vec3f VEC_Z = VEC_FORWARD;
 const Vec3f VEC_Z_NEG = VEC_BACKWARD;
 
-fn void Quat.setFromAxisAngle(&this, Vec3f axis, float angle) {
+fn void Quat.setFromAxisAngle(&self, Vec3f axis, float angle) {
     float s = (float)math::sin(angle * 0.5);
-    this.i = axis.x * s;
-    this.j = axis.y * s;
-    this.k = axis.z * s;
-    this.l = (float)math::cos(angle * 0.5);
+    self.i = axis.x * s;
+    self.j = axis.y * s;
+    self.k = axis.z * s;
+    self.l = (float)math::cos(angle * 0.5);
 }
 
 fn float fmod(float x, float y) {
